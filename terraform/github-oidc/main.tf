@@ -116,6 +116,13 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "cloudfront:GetInvalidation",
       "cloudfront:ListInvalidations",
       "cloudfront:ListDistributions",
+      "cloudfront:CreateFunction",
+      "cloudfront:UpdateFunction",
+      "cloudfront:DescribeFunction",
+      "cloudfront:GetFunction",
+      "cloudfront:DeleteFunction",
+      "cloudfront:PublishFunction",
+      "cloudfront:ListFunctions",
     ]
     resources = ["*"]
   }
