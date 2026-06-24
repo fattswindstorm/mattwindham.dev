@@ -36,6 +36,10 @@ data "aws_cloudfront_cache_policy" "caching_optimized" {
   name = "Managed-CachingOptimized"
 }
 
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
 resource "aws_cloudfront_function" "rewrite_index" {
   name    = "${local.bucket_name}-rewrite-index"
   runtime = "cloudfront-js-2.0"
@@ -140,6 +144,35 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
+  logging_config {
+    bucket          = aws_s3_bucket.logs.bucket_domain_name
+    prefix          = "cloudfront/"
+    include_cookies = false
+  }
+
+  origin {
+    domain_name              = trimsuffix(trimprefix(aws_lambda_function_url.log_viewer.function_url, "https://"), "/")
+    origin_id                = "log-viewer"
+    origin_access_control_id = aws_cloudfront_origin_access_control.log_viewer.id
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/admin*"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "log-viewer"
+    viewer_protocol_policy = "redirect-to-https"
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+    compress               = true
+  }
+
   custom_error_response {
     error_code         = 403
     response_code      = 404
@@ -212,4 +245,139 @@ data "aws_iam_policy_document" "site" {
 resource "aws_s3_bucket_policy" "site" {
   bucket = aws_s3_bucket.site.id
   policy = data.aws_iam_policy_document.site.json
+}
+
+# --- Visitor log capture ---
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "resume-site-logs-${data.aws_caller_identity.current.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    # CloudFront log delivery grants access via ACL, so this bucket can't
+    # use BucketOwnerEnforced like the site bucket does.
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "logs" {
+  depends_on = [aws_s3_bucket_ownership_controls.logs, aws_s3_bucket_public_access_block.logs]
+
+  bucket = aws_s3_bucket.logs.id
+  acl    = "log-delivery-write"
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    id     = "expire-old-logs"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 90
+    }
+  }
+}
+
+# --- Visitor log dashboard (Lambda behind /admin*) ---
+
+data "archive_file" "log_viewer" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/log_viewer/handler.py"
+  output_path = "${path.module}/lambda/log_viewer.zip"
+}
+
+data "aws_iam_policy_document" "log_viewer_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "log_viewer" {
+  name               = "resume-site-log-viewer"
+  assume_role_policy = data.aws_iam_policy_document.log_viewer_trust.json
+}
+
+resource "aws_iam_role_policy_attachment" "log_viewer_basic_execution" {
+  role       = aws_iam_role.log_viewer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+data "aws_iam_policy_document" "log_viewer_permissions" {
+  statement {
+    sid     = "ReadAccessLogs"
+    effect  = "Allow"
+    actions = ["s3:GetObject", "s3:ListBucket"]
+    resources = [
+      aws_s3_bucket.logs.arn,
+      "${aws_s3_bucket.logs.arn}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "log_viewer_permissions" {
+  name   = "resume-site-log-viewer-s3-read"
+  role   = aws_iam_role.log_viewer.id
+  policy = data.aws_iam_policy_document.log_viewer_permissions.json
+}
+
+resource "aws_lambda_function" "log_viewer" {
+  function_name    = "resume-site-log-viewer"
+  role             = aws_iam_role.log_viewer.arn
+  handler          = "handler.handler"
+  runtime          = "python3.13"
+  timeout          = 15
+  filename         = data.archive_file.log_viewer.output_path
+  source_code_hash = data.archive_file.log_viewer.output_base64sha256
+
+  environment {
+    variables = {
+      LOGS_BUCKET        = aws_s3_bucket.logs.id
+      LOGS_PREFIX        = "cloudfront/"
+      DASHBOARD_USERNAME = var.dashboard_username
+      DASHBOARD_PASSWORD = var.dashboard_password
+    }
+  }
+}
+
+resource "aws_lambda_function_url" "log_viewer" {
+  function_name      = aws_lambda_function.log_viewer.function_name
+  authorization_type = "AWS_IAM"
+}
+
+resource "aws_cloudfront_origin_access_control" "log_viewer" {
+  name                              = "resume-site-log-viewer-oac"
+  origin_access_control_origin_type = "lambda"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+resource "aws_lambda_permission" "log_viewer_cloudfront" {
+  statement_id           = "AllowCloudFrontInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.log_viewer.function_name
+  principal              = "cloudfront.amazonaws.com"
+  source_arn             = aws_cloudfront_distribution.site.arn
+  function_url_auth_type = "AWS_IAM"
 }
