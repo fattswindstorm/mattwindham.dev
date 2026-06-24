@@ -116,6 +116,44 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     actions   = ["sts:GetCallerIdentity"]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "AcmCertificateManagement"
+    effect = "Allow"
+    actions = [
+      "acm:RequestCertificate",
+      "acm:DescribeCertificate",
+      "acm:GetCertificate",
+      "acm:DeleteCertificate",
+      "acm:ListCertificates",
+      "acm:ListTagsForCertificate",
+      "acm:AddTagsToCertificate",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "Route53ZoneLookup"
+    effect = "Allow"
+    actions = [
+      "route53:ListHostedZones",
+      "route53:ListHostedZonesByName",
+      "route53:GetChange",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "Route53RecordManagement"
+    effect = "Allow"
+    actions = [
+      "route53:GetHostedZone",
+      "route53:ListResourceRecordSets",
+      "route53:ChangeResourceRecordSets",
+      "route53:ListTagsForResource",
+    ]
+    resources = ["arn:aws:route53:::hostedzone/Z090356212OBKYAPYDLK1"]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_permissions" {
