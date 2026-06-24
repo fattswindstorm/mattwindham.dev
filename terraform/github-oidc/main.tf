@@ -114,6 +114,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "cloudfront:GetCachePolicy",
       "cloudfront:ListResponseHeadersPolicies",
       "cloudfront:GetResponseHeadersPolicy",
+      "cloudfront:ListOriginRequestPolicies",
+      "cloudfront:GetOriginRequestPolicy",
       "cloudfront:CreateInvalidation",
       "cloudfront:GetInvalidation",
       "cloudfront:ListInvalidations",
