@@ -173,6 +173,89 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     ]
     resources = ["arn:aws:route53:::hostedzone/Z090356212OBKYAPYDLK1"]
   }
+
+  statement {
+    sid    = "LogsBucketManagement"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket",
+      "s3:DeleteBucket",
+      "s3:GetBucketAcl",
+      "s3:PutBucketAcl",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:PutBucketPublicAccessBlock",
+      "s3:GetBucketOwnershipControls",
+      "s3:PutBucketOwnershipControls",
+      "s3:GetBucketTagging",
+      "s3:PutBucketTagging",
+      "s3:GetBucketLocation",
+      "s3:GetBucketVersioning",
+      "s3:GetEncryptionConfiguration",
+      "s3:GetBucketCORS",
+      "s3:GetBucketWebsite",
+      "s3:GetBucketLogging",
+      "s3:GetLifecycleConfiguration",
+      "s3:PutLifecycleConfiguration",
+      "s3:GetBucketRequestPayment",
+      "s3:GetReplicationConfiguration",
+      "s3:GetBucketObjectLockConfiguration",
+      "s3:GetAccelerateConfiguration",
+      "s3:GetBucketPolicy",
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "arn:aws:s3:::resume-site-logs-955752000541",
+      "arn:aws:s3:::resume-site-logs-955752000541/*",
+    ]
+  }
+
+  statement {
+    sid    = "LambdaManagement"
+    effect = "Allow"
+    actions = [
+      "lambda:CreateFunction",
+      "lambda:GetFunction",
+      "lambda:UpdateFunctionCode",
+      "lambda:UpdateFunctionConfiguration",
+      "lambda:DeleteFunction",
+      "lambda:TagResource",
+      "lambda:UntagResource",
+      "lambda:ListTags",
+      "lambda:GetFunctionUrlConfig",
+      "lambda:CreateFunctionUrlConfig",
+      "lambda:UpdateFunctionUrlConfig",
+      "lambda:DeleteFunctionUrlConfig",
+      "lambda:AddPermission",
+      "lambda:RemovePermission",
+      "lambda:GetPolicy",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "IAMRoleManagementForLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::955752000541:role/resume-site-log-viewer*"]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_permissions" {
