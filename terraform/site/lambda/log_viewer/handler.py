@@ -13,6 +13,7 @@ BUCKET = os.environ["LOGS_BUCKET"]
 PREFIX = os.environ.get("LOGS_PREFIX", "cloudfront/")
 USERNAME = os.environ["DASHBOARD_USERNAME"]
 PASSWORD = os.environ["DASHBOARD_PASSWORD"]
+ORIGIN_VERIFY_SECRET = os.environ["ORIGIN_VERIFY_SECRET"]
 MAX_FILES = 6
 MAX_ROWS = 200
 
@@ -29,6 +30,19 @@ PAGE_STYLE = """
   .empty { color:var(--text-dim); }
 </style>
 """
+
+
+def _forbidden():
+    return {
+        "statusCode": 403,
+        "headers": {"Content-Type": "text/plain"},
+        "body": "Forbidden",
+    }
+
+
+def _check_origin(headers):
+    secret = headers.get("x-origin-verify") or headers.get("X-Origin-Verify") or ""
+    return hmac.compare_digest(secret, ORIGIN_VERIFY_SECRET)
 
 
 def _unauthorized():
@@ -109,6 +123,8 @@ def _render_table(rows):
 
 def handler(event, context):
     headers = event.get("headers") or {}
+    if not _check_origin(headers):
+        return _forbidden()
     if not _check_auth(headers):
         return _unauthorized()
 
