@@ -9,3 +9,15 @@ variable "domain_name" {
   type        = string
   default     = "mattwindham.dev"
 }
+
+variable "dashboard_username" {
+  description = "Username for the private visitor-log dashboard at /admin"
+  type        = string
+  sensitive   = true
+}
+
+variable "dashboard_password" {
+  description = "Password for the private visitor-log dashboard at /admin"
+  type        = string
+  sensitive   = true
+}

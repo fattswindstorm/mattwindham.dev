@@ -18,6 +18,8 @@ env:
   AWS_REGION: us-east-1
   TF_WORKING_DIR: terraform/site
   AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
 
 jobs:
   plan:
