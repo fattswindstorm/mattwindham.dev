@@ -1,0 +1,431 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const experience = [
+	{
+		company: "Ren",
+		title: "DevOps Engineer",
+		location: "Austin, TX",
+		start: "Jun 2024",
+		end: "Present",
+		bullets: [
+			"Migrated on-premise infrastructure into AWS.",
+			"Implemented Datadog as the team's monitoring platform.",
+			"Automated Datadog configuration using PowerShell modules.",
+		],
+	},
+	{
+		company: "Ren",
+		title: "Senior Site Reliability Engineer",
+		location: "Austin, TX",
+		start: "Feb 2023",
+		end: "Jun 2024",
+		bullets: [
+			"Automated Windows Server administration tasks with PowerShell.",
+			"Built operational dashboards in the Elastic Stack.",
+			"Integrated Microsoft endpoint management for on-prem Windows Server patching.",
+		],
+	},
+	{
+		company: "Stellar Technology Solutions",
+		title: "Senior Site Reliability Engineer",
+		location: "Austin, TX",
+		start: "Nov 2022",
+		end: "May 2023",
+		bullets: [
+			"Led migration of on-premise workloads to AWS.",
+			"Managed the remaining on-premise infrastructure through the transition.",
+			"Built monitoring tools and automation scripts to improve team productivity.",
+		],
+	},
+	{
+		company: "Stellar Technology Solutions",
+		title: "Site Reliability Engineer",
+		location: "Austin, TX",
+		start: "Apr 2021",
+		end: "Nov 2022",
+		bullets: [
+			"Owned reliability across on-premise and cloud environments - installing, configuring, and maintaining operating systems, application software, and system management tooling.",
+			"Partnered with Engineering, Security, QA, and Product to improve reliability, availability, security, and performance of shared infrastructure.",
+			"Wrote runbooks and automated repetitive operational tasks to reduce manual toil.",
+			"Planned and applied security patches across applications and underlying infrastructure.",
+			"Helped integrate AWS services into the company's cloud infrastructure to improve scalability.",
+			"Carried on-call rotation: incident response, service requests, routine maintenance, and server provisioning.",
+		],
+	},
+	{
+		company: "Stellar Technology Solutions",
+		title: "Junior Systems Administrator",
+		location: "Austin, TX",
+		start: "Oct 2019",
+		end: "Apr 2021",
+		bullets: [],
+	},
+	{
+		company: "Cummings Electrical",
+		title: "Systems Administrator",
+		location: "Dallas/Fort Worth, TX",
+		start: "May 2016",
+		end: "Aug 2019",
+		bullets: [
+			"Supported hardware and software systems for the business alongside a small IT team.",
+			"Owned remote access tooling, data backup/restore, Windows Server management, and mobile device management.",
+			"Built a standardized, organized IT environment that scaled smoothly as the company grew by 350+ employees across 15+ locations.",
+		],
+	},
+];
+
+const skillGroups = [
+	{
+		label: "Cloud & DevOps",
+		items: ["AWS", "Terraform", "Datadog", "DevOps", "Production Deployment", "Server Architecture", "Large-Scale Systems"],
+	},
+	{
+		label: "Infrastructure",
+		items: [
+			"Windows Server",
+			"Active Directory",
+			"VMware ESXi",
+			"Hyper-V",
+			"Nutanix",
+			"IIS",
+			"Cisco Systems",
+			"DNS",
+			"WAN",
+			"VPN",
+			"NTFS",
+			"Distributed File System (DFS)",
+		],
+	},
+	{
+		label: "Scripting & Automation",
+		items: ["PowerShell", "Python"],
+	},
+	{
+		label: "Operations",
+		items: ["Server Management", "System Configuration", "Microsoft Exchange", "Troubleshooting", "Team Leadership"],
+	},
+];
+
+const certifications = [
+	{
+		name: "Terraform Associate (004)",
+		authority: "HashiCorp",
+		date: "Mar 2026",
+		url: "https://www.credly.com/badges/9c69824c-dd8b-4614-8b29-0e97719d5787/linked_in_profile",
+	},
+	{
+		name: "AWS Certified Cloud Practitioner",
+		authority: "Amazon Web Services",
+		date: "Apr 2021",
+		url: "http://aws.amazon.com/verification",
+	},
+	{
+		name: "CompTIA A+ ce",
+		authority: "CompTIA",
+		date: "Jun 2018",
+		url: "https://www.youracclaim.com/badges/464fad64-7b44-4961-bb5d-016a1ce0d9bb/linked_in_profile",
+	},
+];
+---
+
+<Layout
+	title="Matthew Windham - DevOps Engineer"
+	description="DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation."
+>
+	<header class="hero">
+		<div class="wrap">
+			<p class="eyebrow">DevOps Engineer · Austin, TX</p>
+			<h1>Matthew Windham</h1>
+			<p class="tagline">
+				Infrastructure automation, AWS migrations, and reliability engineering.
+			</p>
+			<nav class="links">
+				<a href="mailto:windham.matt@gmail.com">Email</a>
+				<a href="https://github.com/fattswindstorm" target="_blank" rel="noopener">GitHub</a>
+				<a href="https://github.com/fattswindstorm/mattwindham.dev" target="_blank" rel="noopener">
+					Source for this site
+				</a>
+			</nav>
+		</div>
+	</header>
+
+	<main class="wrap">
+		<section>
+			<h2>About</h2>
+			<p>
+				I'm a DevOps engineer who got here by way of systems administration - migrating
+				on-premise infrastructure to AWS, automating the operational toil out of Windows Server
+				environments, and building the monitoring that tells you something broke before a customer
+				does. This site is itself a small example of that: Terraform-managed S3 + CloudFront,
+				deployed through a GitHub Actions OIDC pipeline with no stored AWS keys.
+			</p>
+			<blockquote>
+				"Besides black art, there is only automation and mechanization."
+				<cite>- Federico García Lorca</cite>
+			</blockquote>
+			<blockquote>
+				"If a human operator needs to touch your system during normal operations, you have a bug.
+				The definition of normal changes as your systems grow."
+				<cite>- Carla Geisser, Google SRE</cite>
+			</blockquote>
+		</section>
+
+		<section>
+			<h2>Experience</h2>
+			<ol class="experience">
+				{
+					experience.map((job) => (
+						<li>
+							<div class="job-head">
+								<div>
+									<strong>{job.title}</strong>
+									<span class="company">{job.company}</span>
+								</div>
+								<div class="job-meta">
+									<span>{job.start} - {job.end}</span>
+									<span>{job.location}</span>
+								</div>
+							</div>
+							{job.bullets.length > 0 && (
+								<ul>
+									{job.bullets.map((bullet) => <li>{bullet}</li>)}
+								</ul>
+							)}
+						</li>
+					))
+				}
+			</ol>
+		</section>
+
+		<section>
+			<h2>Skills</h2>
+			<div class="skills">
+				{
+					skillGroups.map((group) => (
+						<div>
+							<h3>{group.label}</h3>
+							<ul class="pills">
+								{group.items.map((item) => <li>{item}</li>)}
+							</ul>
+						</div>
+					))
+				}
+			</div>
+		</section>
+
+		<section>
+			<h2>Certifications</h2>
+			<ul class="certs">
+				{
+					certifications.map((cert) => (
+						<li>
+							<a href={cert.url} target="_blank" rel="noopener">{cert.name}</a>
+							<span class="cert-meta">{cert.authority} · {cert.date}</span>
+						</li>
+					))
+				}
+			</ul>
+		</section>
+
+		<section>
+			<h2>Education</h2>
+			<p>University of Montana - Geoscience</p>
+		</section>
+	</main>
+
+	<footer class="wrap">
+		<p>Matthew Windham · windham.matt@gmail.com</p>
+	</footer>
+</Layout>
+
+<style>
+	.wrap {
+		max-width: 760px;
+		margin: 0 auto;
+		padding: 0 1.5rem;
+	}
+
+	.hero {
+		padding: 4rem 0 2rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.eyebrow {
+		color: var(--accent);
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin: 0 0 0.5rem;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin: 0 0 0.5rem;
+	}
+
+	.tagline {
+		color: var(--text-dim);
+		font-size: 1.1rem;
+		margin: 0 0 1.5rem;
+	}
+
+	.links {
+		display: flex;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	main {
+		padding: 3rem 0;
+	}
+
+	section {
+		margin-bottom: 3rem;
+	}
+
+	h2 {
+		font-size: 1.4rem;
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 0.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	blockquote {
+		border-left: 2px solid var(--accent);
+		margin: 1.5rem 0;
+		padding-left: 1rem;
+		color: var(--text-dim);
+		font-style: italic;
+	}
+
+	blockquote cite {
+		display: block;
+		margin-top: 0.3rem;
+		font-style: normal;
+		font-size: 0.9rem;
+	}
+
+	.experience {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.experience > li {
+		margin-bottom: 2rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.experience > li:last-child {
+		border-bottom: none;
+	}
+
+	.job-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.company {
+		color: var(--text-dim);
+		margin-left: 0.5rem;
+	}
+
+	.job-meta {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		color: var(--text-dim);
+	}
+
+	.experience ul {
+		margin: 0.5rem 0 0;
+		padding-left: 1.25rem;
+		color: var(--text-dim);
+	}
+
+	.experience ul li {
+		margin-bottom: 0.4rem;
+	}
+
+	.skills {
+		display: grid;
+		gap: 1.5rem;
+	}
+
+	.skills h3 {
+		font-size: 0.95rem;
+		color: var(--text-dim);
+		margin: 0 0 0.6rem;
+		font-weight: 600;
+	}
+
+	.pills {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+	}
+
+	.pills li {
+		background: var(--bg-raised);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		padding: 0.3rem 0.8rem;
+		font-size: 0.85rem;
+		font-family: var(--mono);
+	}
+
+	.certs {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.certs li {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0.75rem 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.certs li:last-child {
+		border-bottom: none;
+	}
+
+	.cert-meta {
+		color: var(--text-dim);
+		font-size: 0.85rem;
+		font-family: var(--mono);
+	}
+
+	footer {
+		padding: 2rem 0 3rem;
+		color: var(--text-dim);
+		font-size: 0.9rem;
+		border-top: 1px solid var(--border);
+	}
+
+	@media (max-width: 600px) {
+		h1 {
+			font-size: 2rem;
+		}
+
+		.job-meta {
+			align-items: flex-start;
+		}
+	}
+</style>
