@@ -1,10 +1,10 @@
-# resume-site
+# mattwindham.dev
 
 Personal resume / portfolio site, built as a hands-on AWS + DevOps skills showcase.
 Infrastructure is 100% Terraform, deployed via GitHub Actions, kept as close to
 **$0/month** as possible.
 
-**Live**: https://d3krnvtb8vym38.cloudfront.net/
+**Live**: https://mattwindham.dev/
 
 ## Architecture
 
@@ -14,7 +14,8 @@ GitHub Actions (OIDC) --apply--> Terraform --manages--> S3 (private)
                                                    Origin Access Control
                                                               |
                                                               v
-                                       visitor <--HTTPS-- CloudFront
+                            mattwindham.dev <--HTTPS (ACM cert)-- CloudFront
+                                 (Route 53)
 ```
 
 Three independent Terraform stages, each with its own state:
@@ -51,7 +52,8 @@ Three independent Terraform stages, each with its own state:
 
 ## Cost
 
-Everything currently running fits inside the S3 + CloudFront free tier at this traffic
-level - effectively $0/month. The only planned future cost is a custom domain
-(~$12-14/yr, plus a ~$0.50/mo Route 53 hosted zone), which will always be applied
-manually rather than automatically.
+S3 + CloudFront fit inside the free tier at this traffic level. The only real cost is
+the domain itself: `mattwindham.dev` (~$17/yr) plus a Route 53 hosted zone
+(~$0.50/mo). Domain registration was the one step done manually rather than through
+Terraform - everything downstream of it (the ACM cert, DNS validation records, and
+CloudFront alias) is fully Terraform-managed.
