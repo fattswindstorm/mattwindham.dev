@@ -39,11 +39,28 @@ data "aws_cloudfront_cache_policy" "caching_optimized" {
 resource "aws_cloudfront_function" "rewrite_index" {
   name    = "${local.bucket_name}-rewrite-index"
   runtime = "cloudfront-js-2.0"
-  comment = "Append index.html for directory-style requests (Astro's directory build output)"
+  comment = "Redirect www to apex, and append index.html for directory-style requests (Astro's directory build output)"
   publish = true
   code    = <<-EOT
     function handler(event) {
       var request = event.request;
+      var host = request.headers.host.value;
+
+      if (host.startsWith('www.')) {
+        var apexHost = host.slice(4);
+        var qs = '';
+        for (var key in request.querystring) {
+          qs += (qs === '' ? '?' : '&') + key + '=' + request.querystring[key].value;
+        }
+        return {
+          statusCode: 301,
+          statusDescription: 'Moved Permanently',
+          headers: {
+            location: { value: 'https://' + apexHost + request.uri + qs }
+          }
+        };
+      }
+
       var uri = request.uri;
 
       if (uri.endsWith('/')) {
@@ -55,6 +72,10 @@ resource "aws_cloudfront_function" "rewrite_index" {
       return request;
     }
   EOT
+}
+
+data "aws_cloudfront_response_headers_policy" "security_headers" {
+  name = "Managed-SecurityHeadersPolicy"
 }
 
 data "aws_route53_zone" "primary" {
@@ -105,12 +126,13 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = aws_s3_bucket.site.id
-    viewer_protocol_policy = "redirect-to-https"
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
-    compress               = true
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = aws_s3_bucket.site.id
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = true
 
     function_association {
       event_type   = "viewer-request"
