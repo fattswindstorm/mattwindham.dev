@@ -7,5 +7,5 @@ variable "aws_region" {
 variable "github_repo" {
   description = "GitHub repo allowed to assume the CI/CD role, as owner/name"
   type        = string
-  default     = "fattswindstorm/resume-site"
+  default     = "fattswindstorm/mattwindham.dev"
 }
