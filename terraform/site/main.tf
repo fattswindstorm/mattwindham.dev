@@ -151,9 +151,13 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   origin {
-    domain_name              = trimsuffix(trimprefix(aws_lambda_function_url.log_viewer.function_url, "https://"), "/")
-    origin_id                = "log-viewer"
-    origin_access_control_id = aws_cloudfront_origin_access_control.log_viewer.id
+    domain_name = trimsuffix(trimprefix(aws_apigatewayv2_api.log_viewer.api_endpoint, "https://"), "/")
+    origin_id   = "log-viewer"
+
+    custom_header {
+      name  = "X-Origin-Verify"
+      value = random_password.origin_verify.result
+    }
 
     custom_origin_config {
       http_port              = 80
@@ -342,6 +346,11 @@ resource "aws_iam_role_policy" "log_viewer_permissions" {
   policy = data.aws_iam_policy_document.log_viewer_permissions.json
 }
 
+resource "random_password" "origin_verify" {
+  length  = 32
+  special = false
+}
+
 resource "aws_lambda_function" "log_viewer" {
   function_name    = "resume-site-log-viewer"
   role             = aws_iam_role.log_viewer.arn
@@ -353,31 +362,43 @@ resource "aws_lambda_function" "log_viewer" {
 
   environment {
     variables = {
-      LOGS_BUCKET        = aws_s3_bucket.logs.id
-      LOGS_PREFIX        = "cloudfront/"
-      DASHBOARD_USERNAME = var.dashboard_username
-      DASHBOARD_PASSWORD = var.dashboard_password
+      LOGS_BUCKET          = aws_s3_bucket.logs.id
+      LOGS_PREFIX          = "cloudfront/"
+      DASHBOARD_USERNAME   = var.dashboard_username
+      DASHBOARD_PASSWORD   = var.dashboard_password
+      ORIGIN_VERIFY_SECRET = random_password.origin_verify.result
     }
   }
 }
 
-resource "aws_lambda_function_url" "log_viewer" {
-  function_name      = aws_lambda_function.log_viewer.function_name
-  authorization_type = "AWS_IAM"
+resource "aws_apigatewayv2_api" "log_viewer" {
+  name          = "resume-site-log-viewer"
+  protocol_type = "HTTP"
 }
 
-resource "aws_cloudfront_origin_access_control" "log_viewer" {
-  name                              = "resume-site-log-viewer-oac"
-  origin_access_control_origin_type = "lambda"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
+resource "aws_apigatewayv2_integration" "log_viewer" {
+  api_id                 = aws_apigatewayv2_api.log_viewer.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.log_viewer.invoke_arn
+  payload_format_version = "2.0"
 }
 
-resource "aws_lambda_permission" "log_viewer_cloudfront" {
-  statement_id           = "AllowCloudFrontInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.log_viewer.function_name
-  principal              = "cloudfront.amazonaws.com"
-  source_arn             = aws_cloudfront_distribution.site.arn
-  function_url_auth_type = "AWS_IAM"
+resource "aws_apigatewayv2_route" "log_viewer" {
+  api_id    = aws_apigatewayv2_api.log_viewer.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.log_viewer.id}"
+}
+
+resource "aws_apigatewayv2_stage" "log_viewer" {
+  api_id      = aws_apigatewayv2_api.log_viewer.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+resource "aws_lambda_permission" "log_viewer_apigateway" {
+  statement_id  = "AllowApiGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.log_viewer.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.log_viewer.execution_arn}/*/*"
 }
