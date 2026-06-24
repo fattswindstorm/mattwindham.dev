@@ -112,6 +112,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "cloudfront:DeleteOriginAccessControl",
       "cloudfront:ListCachePolicies",
       "cloudfront:GetCachePolicy",
+      "cloudfront:ListResponseHeadersPolicies",
+      "cloudfront:GetResponseHeadersPolicy",
       "cloudfront:CreateInvalidation",
       "cloudfront:GetInvalidation",
       "cloudfront:ListInvalidations",
