@@ -25,14 +25,6 @@ resource "aws_s3_bucket_ownership_controls" "site" {
   }
 }
 
-resource "aws_s3_object" "index" {
-  bucket       = aws_s3_bucket.site.id
-  key          = "index.html"
-  content      = "<!doctype html><html><body><h1>Resume site - coming soon</h1></body></html>"
-  content_type = "text/html"
-  etag         = md5("<!doctype html><html><body><h1>Resume site - coming soon</h1></body></html>")
-}
-
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${local.bucket_name}-oac"
   origin_access_control_origin_type = "s3"
