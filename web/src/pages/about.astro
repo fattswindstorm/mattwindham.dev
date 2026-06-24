@@ -1,0 +1,68 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+	title="About - Matthew Windham"
+	description="A little about Matthew Windham, DevOps engineer in Austin, Texas."
+>
+	<main class="wrap">
+		<div class="about-head">
+			<img class="avatar" src="/avatar.jpg" width="140" height="140" alt="Matthew Windham" />
+			<h1>About</h1>
+		</div>
+
+		<section>
+			<p>
+				I grew up in Montana, and eventually made my way down to Austin, Texas, where I now work
+				as a DevOps engineer. Outside of work I'm married, we have a dog, and most weekends you'll
+				find me out on a golf course somewhere around Texas.
+			</p>
+			<blockquote>
+				"Besides black art, there is only automation and mechanization."
+				<cite>- Federico García Lorca</cite>
+			</blockquote>
+			<blockquote>
+				"If a human operator needs to touch your system during normal operations, you have a bug.
+				The definition of normal changes as your systems grow."
+				<cite>- Carla Geisser, Google SRE</cite>
+			</blockquote>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.about-head {
+		display: flex;
+		align-items: center;
+		gap: 1.75rem;
+		padding-top: 3rem;
+		margin-bottom: 2rem;
+	}
+
+	.avatar {
+		width: 140px;
+		height: 140px;
+		border-radius: 50%;
+		border: 2px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	h1 {
+		font-size: 2rem;
+		margin: 0;
+	}
+
+	@media (max-width: 600px) {
+		.about-head {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+		}
+
+		.avatar {
+			width: 100px;
+			height: 100px;
+		}
+	}
+</style>
