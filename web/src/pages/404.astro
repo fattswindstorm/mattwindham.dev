@@ -1,0 +1,58 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+	title="Page Not Found - Matthew Windham"
+	description="The page you're looking for doesn't exist."
+>
+	<main class="wrap not-found">
+		<p class="code">404</p>
+		<h1>Page not found</h1>
+		<p>That page doesn't exist or has moved.</p>
+		<a class="btn btn-primary" href="/">Back to Home</a>
+	</main>
+</Layout>
+
+<style>
+	.not-found {
+		min-height: calc(100vh - 70px);
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.code {
+		font-family: var(--mono);
+		color: var(--accent);
+		font-size: 1.1rem;
+		margin: 0;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin: 0 0 0.5rem;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.7rem 1.5rem;
+		border-radius: 999px;
+		font-weight: 600;
+		font-size: 0.95rem;
+		margin-top: 1.5rem;
+	}
+
+	.btn-primary {
+		background: var(--accent);
+		color: #0b0e14;
+	}
+
+	.btn-primary:hover {
+		opacity: 0.9;
+		text-decoration: none;
+	}
+</style>
