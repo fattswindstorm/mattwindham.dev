@@ -258,6 +258,21 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     ]
     resources = ["arn:aws:iam::955752000541:role/resume-site-log-viewer*"]
   }
+
+  statement {
+    sid    = "ApiGatewayManagement"
+    effect = "Allow"
+    actions = [
+      "apigateway:POST",
+      "apigateway:GET",
+      "apigateway:PATCH",
+      "apigateway:PUT",
+      "apigateway:DELETE",
+      "apigateway:TagResource",
+      "apigateway:UntagResource",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_permissions" {
