@@ -219,6 +219,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     actions = [
       "lambda:CreateFunction",
       "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
+      "lambda:ListVersionsByFunction",
       "lambda:UpdateFunctionCode",
       "lambda:UpdateFunctionConfiguration",
       "lambda:DeleteFunction",
