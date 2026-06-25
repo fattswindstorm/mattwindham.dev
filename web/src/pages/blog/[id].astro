@@ -1,0 +1,165 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog', ({ data }) => !data.draft);
+	return posts.map(post => ({
+		params: { id: post.id },
+		props: { post },
+	}));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+---
+
+<Layout title={`${post.data.title} — Matthew Windham`} description={post.data.description}>
+	<main>
+		<div class="wrap">
+			<article>
+				<header class="post-header">
+					<a href="/blog" class="back-link">← Blog</a>
+					<h1 class="post-title">{post.data.title}</h1>
+					<time class="post-date" datetime={post.data.date.toISOString()}>
+						{fmt.format(post.data.date)}
+					</time>
+				</header>
+				<div class="post-body">
+					<Content />
+				</div>
+			</article>
+		</div>
+	</main>
+</Layout>
+
+<style>
+	.post-header {
+		margin-bottom: 3rem;
+		border-bottom: none;
+	}
+
+	.back-link {
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		color: var(--text-dim);
+		display: inline-block;
+		margin-bottom: 1.5rem;
+	}
+
+	.back-link:hover {
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.post-title {
+		font-size: clamp(1.6rem, 4vw, 2.2rem);
+		font-weight: 700;
+		line-height: 1.2;
+		color: #fff;
+		margin: 0 0 0.75rem;
+		border-bottom: none;
+	}
+
+	.post-date {
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		color: var(--text-dim);
+	}
+
+	.post-body {
+		line-height: 1.8;
+		color: var(--text);
+	}
+
+	.post-body :global(h2) {
+		font-size: 1.3rem;
+		margin: 2.5rem 0 1rem;
+		color: #fff;
+	}
+
+	.post-body :global(h3) {
+		font-size: 1.1rem;
+		margin: 2rem 0 0.75rem;
+		color: #fff;
+	}
+
+	.post-body :global(p) {
+		margin: 0 0 1.25rem;
+	}
+
+	.post-body :global(a) {
+		color: var(--accent);
+	}
+
+	.post-body :global(code) {
+		background: var(--bg-raised);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 0.15em 0.4em;
+		font-size: 0.88em;
+	}
+
+	.post-body :global(pre) {
+		background: var(--bg-raised);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 1.25rem;
+		overflow-x: auto;
+		margin: 1.5rem 0;
+	}
+
+	.post-body :global(pre code) {
+		background: none;
+		border: none;
+		padding: 0;
+		font-size: 0.875rem;
+	}
+
+	.post-body :global(ul),
+	.post-body :global(ol) {
+		padding-left: 1.5rem;
+		margin: 0 0 1.25rem;
+	}
+
+	.post-body :global(li) {
+		margin-bottom: 0.4rem;
+	}
+
+	.post-body :global(table) {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1.5rem 0;
+		font-size: 0.9rem;
+	}
+
+	.post-body :global(th),
+	.post-body :global(td) {
+		text-align: left;
+		padding: 0.6rem 1rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.post-body :global(th) {
+		color: var(--text-dim);
+		font-family: var(--mono);
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.post-body :global(blockquote) {
+		border-left: 2px solid var(--accent);
+		margin: 1.5rem 0;
+		padding-left: 1rem;
+		color: var(--text-dim);
+		font-style: italic;
+	}
+
+	.post-body :global(hr) {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 2.5rem 0;
+	}
+</style>
