@@ -141,6 +141,7 @@ const certifications = [
 		<div class="resume-header">
 			<h1>Resume</h1>
 			<span class="updated">Updated {lastUpdated}</span>
+			<a class="btn-opportunity" href="/opportunity">Submit an Opportunity →</a>
 		</div>
 
 		<section>
@@ -225,6 +226,22 @@ const certifications = [
 		font-family: var(--mono);
 		font-size: 0.82rem;
 		color: var(--text-dim);
+	}
+
+	.btn-opportunity {
+		margin-left: auto;
+		font-size: 0.85rem;
+		font-family: var(--mono);
+		color: var(--accent);
+		border: 1px solid rgba(255, 153, 0, 0.35);
+		border-radius: 999px;
+		padding: 0.3rem 0.9rem;
+		white-space: nowrap;
+	}
+
+	.btn-opportunity:hover {
+		text-decoration: none;
+		background: rgba(255, 153, 0, 0.08);
 	}
 
 	.experience {

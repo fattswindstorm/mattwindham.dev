@@ -21,3 +21,9 @@ variable "dashboard_password" {
   type        = string
   sensitive   = true
 }
+
+variable "notify_email" {
+  description = "Email address to notify when an opportunity form is submitted"
+  type        = string
+  default     = "windham.matt@gmail.com"
+}
