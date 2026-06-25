@@ -1,0 +1,57 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="Signing In — Recruiter Portal — Matthew Windham"
+  description="Completing sign-in to the recruiter portal."
+>
+  <main class="wrap">
+    <h1>Signing You In…</h1>
+    <div id="form-status" class="form-status" hidden></div>
+  </main>
+</Layout>
+
+<script>
+  import { handleOAuthCallback, getClaims, isAdmin } from "../../lib/auth";
+
+  const statusEl = document.getElementById("form-status") as HTMLDivElement;
+
+  (async () => {
+    try {
+      const next = await handleOAuthCallback();
+      const claims = await getClaims();
+      if (next) {
+        window.location.href = next;
+      } else if (isAdmin(claims)) {
+        window.location.href = "/portal/admin";
+      } else {
+        window.location.href = "/portal/dashboard";
+      }
+    } catch (err) {
+      statusEl.textContent = err instanceof Error ? err.message : String(err);
+      statusEl.className = "form-status form-status--error";
+      statusEl.hidden = false;
+    }
+  })();
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 1.5rem;
+  }
+
+  .form-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    max-width: 480px;
+  }
+
+  .form-status--error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff7070;
+  }
+</style>

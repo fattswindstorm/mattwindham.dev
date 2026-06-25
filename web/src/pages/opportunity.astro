@@ -37,10 +37,14 @@ const compRanges = [
   description="Submit a job opportunity or contract inquiry for Matthew Windham, DevOps Engineer in Austin, TX."
 >
   <main class="wrap">
-    <h1>Submit an Opportunity</h1>
+    <div class="top-row">
+      <h1>Submit an Opportunity</h1>
+      <button type="button" id="signout-btn" class="btn-link" hidden>Sign out</button>
+    </div>
     <p class="intro">
       Fill out the form below and I'll receive it directly. Fields marked with
-      compensation context help me respond quickly and accurately.
+      compensation context help me respond quickly and accurately. Once submitted,
+      you can read and reply to my response from your <a href="/portal/dashboard">dashboard</a>.
     </p>
 
     <form id="opp-form" novalidate>
@@ -50,11 +54,11 @@ const compRanges = [
         <div class="field-row">
           <div class="field">
             <label for="name">Name <span class="req">*</span></label>
-            <input type="text" id="name" name="name" required autocomplete="name" />
+            <input type="text" id="name" name="name" required autocomplete="name" readonly />
           </div>
           <div class="field">
             <label for="email">Email <span class="req">*</span></label>
-            <input type="email" id="email" name="email" required autocomplete="email" />
+            <input type="email" id="email" name="email" required autocomplete="email" readonly />
           </div>
         </div>
         <div class="field-row">
@@ -141,10 +145,26 @@ const compRanges = [
 </Layout>
 
 <script>
+  import { requireAuth, authHeader, signOut } from "../lib/auth";
+
   const form = document.getElementById("opp-form") as HTMLFormElement;
   const statusEl = document.getElementById("form-status") as HTMLDivElement;
   const compSection = document.getElementById("comp-section") as HTMLDivElement;
   const contractLengthField = document.getElementById("contract-length-field") as HTMLDivElement;
+  const signoutBtn = document.getElementById("signout-btn") as HTMLButtonElement;
+  const nameInput = document.getElementById("name") as HTMLInputElement;
+  const emailInput = document.getElementById("email") as HTMLInputElement;
+
+  signoutBtn.addEventListener("click", signOut);
+
+  (async () => {
+    const claims = await requireAuth("/opportunity");
+    if (!claims) return;
+
+    nameInput.value = claims.name || "";
+    emailInput.value = claims.email || "";
+    signoutBtn.hidden = false;
+  })();
 
   // Show compensation and contract length based on employment type
   document.querySelectorAll('input[name="employment_type"]').forEach((radio) => {
@@ -186,9 +206,10 @@ const compRanges = [
     }
 
     try {
+      const headers = await authHeader();
       const res = await fetch("/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -227,9 +248,31 @@ const compRanges = [
 </script>
 
 <style>
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3rem 0 0.5rem;
+    gap: 1rem;
+  }
+
   h1 {
     font-size: 2rem;
-    margin: 3rem 0 0.5rem;
+    margin: 0;
+  }
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
   }
 
   .intro {
@@ -313,6 +356,11 @@ const compRanges = [
   textarea:focus {
     outline: none;
     border-color: var(--accent);
+  }
+
+  input[readonly] {
+    color: var(--text-dim);
+    cursor: default;
   }
 
   textarea {
