@@ -35,28 +35,40 @@ const certPath = [
 		name: "Kubernetes and Cloud Native Associate (KCNA)",
 		status: "next",
 		date: null,
-		note: "Foundational Kubernetes concepts — cloud native architecture, containers, scheduling, and observability. First step on the K8s path.",
+		note: "Foundational Kubernetes concepts — cloud native architecture, containers, scheduling, and observability. Currently in progress.",
+	},
+	{
+		name: "Microsoft Azure Fundamentals (AZ-900)",
+		status: "target",
+		date: null,
+		note: "Azure cloud fundamentals — core services, pricing, and architecture. Fast ramp-up that mirrors what I already know in AWS. First step into the Azure side of Ren's multi-cloud stack.",
 	},
 	{
 		name: "Certified Kubernetes Administrator (CKA)",
 		status: "target",
 		date: null,
-		note: "Hands-on cluster administration — the primary target. Directly maps to what separates a DevOps Engineer from a Senior DevOps Engineer at Ren.",
+		note: "Hands-on cluster administration. Plan to study using AKS (Azure Kubernetes Service) — gets K8s and Azure hands-on in one track. The primary differentiator between DevOps Engineer and Senior DevOps Engineer at Ren.",
+	},
+	{
+		name: "Microsoft Azure DevOps Engineer Expert (AZ-400)",
+		status: "target",
+		date: null,
+		note: "Azure DevOps pipelines, IaC, monitoring, and security. Most role-relevant Azure cert given Ren's use of Azure alongside AWS.",
 	},
 ];
 
 const buildingToward = [
+	{ label: "Azure", note: "Terraform azurerm provider, AKS, Blob Storage, Azure Functions — mirrors existing AWS work" },
 	{ label: "Kubernetes", note: "Cluster design, workloads, networking, storage" },
 	{ label: "GitOps", note: "Argo CD / Flux for declarative deployments" },
 	{ label: "Container Security", note: "Trivy, Checkov, pod security policies" },
-	{ label: "Azure", note: "Multi-cloud — Ren stack spans AWS and Azure" },
-	{ label: "FinOps", note: "Rightsizing, spot instances, cost visibility" },
+	{ label: "FinOps", note: "Rightsizing, spot instances, cost visibility dashboards" },
 ];
 ---
 
 <Layout
 	title="Projects — Matthew Windham"
-	description="Current projects and learning roadmap for Matthew Windham — Kubernetes, KCNA, CKA, and the path to senior-level DevOps."
+	description="Current projects and learning roadmap for Matthew Windham — Azure, Kubernetes, and the path to senior-level DevOps."
 >
 	<main class="wrap">
 		<h1>Projects & Goals</h1>
@@ -89,9 +101,10 @@ const buildingToward = [
 		<section>
 			<h2>Certification Path</h2>
 			<p class="section-intro">
-				The goal is Senior DevOps Engineer. The clearest gap is Kubernetes — the Sr. JD at Ren is
-				heavily K8s-first: cluster design, GitOps, pod security, HPA/VPA tuning. KCNA builds the
-				foundation; CKA is the hands-on target.
+				The goal is Senior DevOps Engineer. Two gaps stand out in the Sr. JD at Ren: Kubernetes
+				depth (cluster design, GitOps, pod security) and Azure alongside AWS. The plan attacks
+				both — AZ-900 gets Azure fundamentals fast, then studying CKA on AKS covers Kubernetes
+				hands-on and Azure hands-on in one track.
 			</p>
 			<ol class="cert-path">
 				{
