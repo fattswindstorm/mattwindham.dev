@@ -105,7 +105,7 @@ resource "aws_lambda_function" "opportunity" {
     variables = {
       OPPORTUNITIES_TABLE = aws_dynamodb_table.opportunities.name
       NOTIFY_EMAIL        = var.notify_email
-      FROM_EMAIL          = "noreply@${var.domain_name}"
+      FROM_EMAIL          = "opportunity@${var.domain_name}"
     }
   }
 }
