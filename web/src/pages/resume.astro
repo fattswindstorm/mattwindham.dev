@@ -109,6 +109,8 @@ const skillGroups = [
 	},
 ];
 
+const lastUpdated = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", timeZone: "UTC" });
+
 const certifications = [
 	{
 		name: "Terraform Associate (004)",
@@ -136,7 +138,10 @@ const certifications = [
 	description="Resume for Matthew Windham - DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation."
 >
 	<main class="wrap">
-		<h1>Resume</h1>
+		<div class="resume-header">
+			<h1>Resume</h1>
+			<span class="updated">Updated {lastUpdated}</span>
+		</div>
 
 		<section>
 			<h2>Experience</h2>
@@ -203,9 +208,23 @@ const certifications = [
 </Layout>
 
 <style>
+	.resume-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1.25rem;
+		flex-wrap: wrap;
+		margin: 3rem 0 1rem;
+	}
+
 	h1 {
 		font-size: 2rem;
-		margin: 3rem 0 1rem;
+		margin: 0;
+	}
+
+	.updated {
+		font-family: var(--mono);
+		font-size: 0.82rem;
+		color: var(--text-dim);
 	}
 
 	.experience {
