@@ -3,34 +3,32 @@ import Layout from "../layouts/Layout.astro";
 
 const API_URL = "https://mattwindham.dev/contact";
 
-const ftRanges = [
+const compRanges = [
   {
-    value: "ft-50-150k",
+    value: "50-150k",
     label: "$50k – $150k / yr",
-    note: "Est. $65k – $175k equivalent as 1099 (SE tax + ~$12k/yr insurance premium)",
+    note1: "~$24 – $72 / hr equivalent",
+    note2: "Est. $65k – $175k as 1099 (SE tax + ~$12k/yr insurance)",
+    low: true,
   },
   {
-    value: "ft-150-200k",
+    value: "150-200k",
     label: "$150k – $200k / yr",
-    note: "Est. $175k – $230k equivalent as 1099",
+    note1: "~$72 – $96 / hr equivalent",
+    note2: "Est. $175k – $230k as 1099",
   },
   {
-    value: "ft-200-500k",
+    value: "200-500k",
     label: "$200k – $500k / yr",
-    note: "Est. $230k – $550k equivalent as 1099",
+    note1: "~$96 – $240 / hr equivalent",
+    note2: "Est. $230k – $550k as 1099",
   },
   {
-    value: "ft-500k+",
+    value: "500k+",
     label: "$500k+ / yr",
-    note: "Est. $550k+ equivalent as 1099",
+    note1: "~$240+ / hr equivalent",
+    note2: "Est. $550k+ as 1099",
   },
-];
-
-const contractRanges = [
-  { value: "c-25-75",   label: "$25 – $75 / hr",   note: "~$52k – $156k / yr annualized (2,080 hrs)" },
-  { value: "c-75-125",  label: "$75 – $125 / hr",  note: "~$156k – $260k / yr annualized" },
-  { value: "c-125-250", label: "$125 – $250 / hr", note: "~$260k – $520k / yr annualized" },
-  { value: "c-250+",    label: "$250+ / hr",        note: "~$520k+ / yr annualized" },
 ];
 ---
 
@@ -103,38 +101,19 @@ const contractRanges = [
           </div>
         </div>
 
-        <!-- Full Time compensation -->
-        <div class="field comp-group" id="comp-ft" hidden>
+        <!-- Compensation (all employment types) -->
+        <div class="field comp-group" id="comp-section" hidden>
           <label>Compensation Range <span class="req">*</span></label>
           <p class="comp-note">
-            1099 estimates reflect ~7.65% self-employment tax plus an estimated
-            $12k/yr increase in insurance premiums for joining a spouse's plan.
-            These are rough guides, not binding figures.
+            Hourly and 1099 figures are estimates for context — not binding.
+            1099 reflects ~7.65% SE tax + ~$12k/yr insurance premium.
           </p>
           <div class="comp-options">
-            {ftRanges.map((r) => (
-              <label class={`comp-card ${r.value === "ft-50-150k" ? "comp-card--low" : ""}`}>
+            {compRanges.map((r) => (
+              <label class={`comp-card ${r.low ? "comp-card--low" : ""}`}>
                 <input type="radio" name="compensation_range" value={r.value} />
                 <span class="comp-label">{r.label}</span>
-                {r.note && <span class="comp-sub">{r.note}</span>}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <!-- Contract / C2H compensation -->
-        <div class="field comp-group" id="comp-contract" hidden>
-          <label>Hourly Rate Range <span class="req">*</span></label>
-          <p class="comp-note">
-            Annualized estimates assume 2,080 hrs/yr and exclude benefits.
-            Contract-to-hire roles should reflect the contract billing rate.
-          </p>
-          <div class="comp-options">
-            {contractRanges.map((r) => (
-              <label class="comp-card">
-                <input type="radio" name="compensation_range" value={r.value} />
-                <span class="comp-label">{r.label}</span>
-                {r.note && <span class="comp-sub">{r.note}</span>}
+                <span class="comp-sub">{r.note1} &nbsp;·&nbsp; {r.note2}</span>
               </label>
             ))}
           </div>
@@ -164,19 +143,16 @@ const contractRanges = [
 <script>
   const form = document.getElementById("opp-form") as HTMLFormElement;
   const statusEl = document.getElementById("form-status") as HTMLDivElement;
-  const compFt = document.getElementById("comp-ft") as HTMLDivElement;
-  const compContract = document.getElementById("comp-contract") as HTMLDivElement;
+  const compSection = document.getElementById("comp-section") as HTMLDivElement;
   const contractLengthField = document.getElementById("contract-length-field") as HTMLDivElement;
 
-  // Show/hide compensation ranges based on employment type
+  // Show compensation and contract length based on employment type
   document.querySelectorAll('input[name="employment_type"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       const val = (radio as HTMLInputElement).value;
-      const isFt = val === "full-time";
       const isHourly = val === "contract" || val === "c2h";
 
-      compFt.hidden = !isFt;
-      compContract.hidden = !isHourly;
+      compSection.hidden = false;
       contractLengthField.hidden = !isHourly;
 
       // Clear previously selected comp range when switching type
@@ -220,8 +196,7 @@ const contractRanges = [
 
       if (res.ok) {
         form.reset();
-        compFt.hidden = true;
-        compContract.hidden = true;
+        compSection.hidden = true;
         contractLengthField.hidden = true;
 
         if (json.low_comp) {

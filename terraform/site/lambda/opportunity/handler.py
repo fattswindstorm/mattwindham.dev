@@ -16,17 +16,13 @@ REQUIRED = [
     "job_title", "job_description", "employment_type", "compensation_range",
 ]
 
-LOW_COMP_RANGES = {"ft-50-150k"}
+LOW_COMP_RANGES = {"50-150k"}
 
 COMP_LABELS = {
-    "ft-50-150k":  "$50k–$150k/yr (W2)",
-    "ft-150-200k": "$150k–$200k/yr (W2)",
-    "ft-200-500k": "$200k–$500k/yr (W2)",
-    "ft-500k+":    "$500k+/yr (W2)",
-    "c-25-75":     "$25–$75/hr",
-    "c-75-125":    "$75–$125/hr",
-    "c-125-250":   "$125–$250/hr",
-    "c-250+":      "$250+/hr",
+    "50-150k":  "$50k–$150k/yr",
+    "150-200k": "$150k–$200k/yr",
+    "200-500k": "$200k–$500k/yr",
+    "500k+":    "$500k+/yr",
 }
 
 TYPE_LABELS = {
