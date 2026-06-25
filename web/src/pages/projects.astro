@@ -1,0 +1,359 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const projects = [
+	{
+		name: "mattwindham.dev",
+		description:
+			"This site — a personal portfolio and blog built on AWS. Static site generated with Astro, served via CloudFront with S3 as the origin. Infrastructure managed entirely in Terraform, deployed via GitHub Actions with branch protection and environment-gated approvals.",
+		stack: ["Astro", "AWS", "Terraform", "CloudFront", "S3", "Lambda", "GitHub Actions"],
+		url: "https://mattwindham.dev",
+		repo: "https://github.com/fattswindstorm/mattwindham.dev",
+	},
+];
+
+const certPath = [
+	{
+		name: "CompTIA A+",
+		status: "done",
+		date: "Jun 2018",
+		note: "Foundation in hardware, OS, networking, and troubleshooting.",
+	},
+	{
+		name: "AWS Certified Cloud Practitioner",
+		status: "done",
+		date: "Apr 2021",
+		note: "Cloud fundamentals — core AWS services, pricing, and architecture.",
+	},
+	{
+		name: "HashiCorp Terraform Associate (004)",
+		status: "done",
+		date: "Mar 2026",
+		note: "Infrastructure as Code — validated hands-on Terraform experience.",
+	},
+	{
+		name: "Kubernetes and Cloud Native Associate (KCNA)",
+		status: "next",
+		date: null,
+		note: "Foundational Kubernetes concepts — cloud native architecture, containers, scheduling, and observability. First step on the K8s path.",
+	},
+	{
+		name: "Certified Kubernetes Administrator (CKA)",
+		status: "target",
+		date: null,
+		note: "Hands-on cluster administration — the primary target. Directly maps to what separates a DevOps Engineer from a Senior DevOps Engineer at Ren.",
+	},
+];
+
+const buildingToward = [
+	{ label: "Kubernetes", note: "Cluster design, workloads, networking, storage" },
+	{ label: "GitOps", note: "Argo CD / Flux for declarative deployments" },
+	{ label: "Container Security", note: "Trivy, Checkov, pod security policies" },
+	{ label: "Azure", note: "Multi-cloud — Ren stack spans AWS and Azure" },
+	{ label: "FinOps", note: "Rightsizing, spot instances, cost visibility" },
+];
+---
+
+<Layout
+	title="Projects — Matthew Windham"
+	description="Current projects and learning roadmap for Matthew Windham — Kubernetes, KCNA, CKA, and the path to senior-level DevOps."
+>
+	<main class="wrap">
+		<h1>Projects & Goals</h1>
+
+		<section>
+			<h2>Projects</h2>
+			<ul class="project-list">
+				{
+					projects.map((p) => (
+						<li class="project-card">
+							<div class="project-head">
+								<strong class="project-name">{p.name}</strong>
+								<div class="project-links">
+									<a href={p.url} target="_blank" rel="noopener">Site</a>
+									<a href={p.repo} target="_blank" rel="noopener">GitHub</a>
+								</div>
+							</div>
+							<p class="project-desc">{p.description}</p>
+							<ul class="pills">
+								{p.stack.map((s) => (
+									<li>{s}</li>
+								))}
+							</ul>
+						</li>
+					))
+				}
+			</ul>
+		</section>
+
+		<section>
+			<h2>Certification Path</h2>
+			<p class="section-intro">
+				The goal is Senior DevOps Engineer. The clearest gap is Kubernetes — the Sr. JD at Ren is
+				heavily K8s-first: cluster design, GitOps, pod security, HPA/VPA tuning. KCNA builds the
+				foundation; CKA is the hands-on target.
+			</p>
+			<ol class="cert-path">
+				{
+					certPath.map((cert) => (
+						<li class={`cert-item cert-${cert.status}`}>
+							<div class="cert-marker" aria-hidden="true">
+								{cert.status === "done" ? "✓" : cert.status === "next" ? "→" : "◎"}
+							</div>
+							<div class="cert-content">
+								<div class="cert-head">
+									<strong>{cert.name}</strong>
+									{cert.date && <span class="cert-date">{cert.date}</span>}
+									{!cert.date && cert.status === "next" && (
+										<span class="cert-badge badge-next">Up next</span>
+									)}
+									{!cert.date && cert.status === "target" && (
+										<span class="cert-badge badge-target">Target</span>
+									)}
+								</div>
+								<p class="cert-note">{cert.note}</p>
+							</div>
+						</li>
+					))
+				}
+			</ol>
+		</section>
+
+		<section>
+			<h2>Skills I'm Building</h2>
+			<ul class="building-list">
+				{
+					buildingToward.map((item) => (
+						<li>
+							<span class="skill-name">{item.label}</span>
+							<span class="skill-note">{item.note}</span>
+						</li>
+					))
+				}
+			</ul>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	h1 {
+		font-size: 2rem;
+		margin: 3rem 0 1rem;
+	}
+
+	.section-intro {
+		color: var(--text-dim);
+		line-height: 1.7;
+		max-width: 62ch;
+		margin: -0.5rem 0 1.5rem;
+		font-size: 0.95rem;
+	}
+
+	/* Projects */
+	.project-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.project-card {
+		background: var(--bg-raised);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 1.5rem;
+	}
+
+	.project-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 1rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.75rem;
+	}
+
+	.project-name {
+		font-size: 1.1rem;
+		color: var(--text);
+	}
+
+	.project-links {
+		display: flex;
+		gap: 1rem;
+		font-family: var(--mono);
+		font-size: 0.85rem;
+	}
+
+	.project-desc {
+		color: var(--text-dim);
+		line-height: 1.7;
+		margin: 0 0 1rem;
+		font-size: 0.95rem;
+	}
+
+	.pills {
+		list-style: none;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin: 0;
+		padding: 0;
+	}
+
+	.pills li {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		padding: 0.2rem 0.7rem;
+		font-size: 0.8rem;
+		font-family: var(--mono);
+		color: var(--text-dim);
+	}
+
+	/* Cert path */
+	.cert-path {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		position: relative;
+	}
+
+	.cert-path::before {
+		content: "";
+		position: absolute;
+		left: 11px;
+		top: 8px;
+		bottom: 8px;
+		width: 2px;
+		background: var(--border);
+	}
+
+	.cert-item {
+		display: flex;
+		gap: 1.25rem;
+		padding-bottom: 1.75rem;
+		position: relative;
+	}
+
+	.cert-item:last-child {
+		padding-bottom: 0;
+	}
+
+	.cert-marker {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.75rem;
+		font-weight: 700;
+		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
+	}
+
+	.cert-done .cert-marker {
+		background: var(--accent);
+		color: #0b0e14;
+	}
+
+	.cert-next .cert-marker {
+		background: var(--bg-raised);
+		border: 2px solid var(--accent);
+		color: var(--accent);
+	}
+
+	.cert-target .cert-marker {
+		background: var(--bg-raised);
+		border: 2px solid var(--border);
+		color: var(--text-dim);
+	}
+
+	.cert-content {
+		padding-top: 2px;
+		flex: 1;
+	}
+
+	.cert-head {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.3rem;
+	}
+
+	.cert-done .cert-head strong {
+		color: var(--text);
+	}
+
+	.cert-next .cert-head strong {
+		color: var(--accent);
+	}
+
+	.cert-target .cert-head strong {
+		color: var(--text-dim);
+	}
+
+	.cert-date {
+		font-family: var(--mono);
+		font-size: 0.82rem;
+		color: var(--text-dim);
+	}
+
+	.cert-badge {
+		font-family: var(--mono);
+		font-size: 0.75rem;
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+	}
+
+	.badge-next {
+		background: rgba(255, 153, 0, 0.15);
+		color: var(--accent);
+		border: 1px solid rgba(255, 153, 0, 0.3);
+	}
+
+	.badge-target {
+		background: var(--bg-raised);
+		color: var(--text-dim);
+		border: 1px solid var(--border);
+	}
+
+	.cert-note {
+		color: var(--text-dim);
+		font-size: 0.9rem;
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	/* Skills building */
+	.building-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.building-list li {
+		display: flex;
+		gap: 1.5rem;
+		align-items: baseline;
+		flex-wrap: wrap;
+	}
+
+	.skill-name {
+		font-family: var(--mono);
+		font-size: 0.9rem;
+		color: var(--text);
+		min-width: 140px;
+		flex-shrink: 0;
+	}
+
+	.skill-note {
+		color: var(--text-dim);
+		font-size: 0.9rem;
+	}
+</style>
