@@ -216,8 +216,9 @@ const contractRanges = [
         body: JSON.stringify(data),
       });
 
+      const json = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        const json = await res.json();
         form.reset();
         compFt.hidden = true;
         compContract.hidden = true;
@@ -232,10 +233,11 @@ const contractRanges = [
           showStatus("success", "Received — thank you. You'll hear back shortly.");
         }
       } else {
-        showStatus("error", "Something went wrong. Please try again or email me directly.");
+        const msg = json.error || json.message || `HTTP ${res.status} ${res.statusText}`;
+        showStatus("error", `Error: ${msg}`);
       }
-    } catch {
-      showStatus("error", "Could not reach the server. Please try again.");
+    } catch (err) {
+      showStatus("error", `Network error: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     submitBtn.disabled = false;
