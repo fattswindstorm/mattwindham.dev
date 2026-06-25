@@ -18,13 +18,18 @@ GitHub Actions (OIDC) --apply--> Terraform --manages--> S3 (private)
                                  (Route 53)
 ```
 
-Three independent Terraform stages, each with its own state:
+Independent Terraform stages, each with its own state:
 
 | Stage | What it does | State |
 |---|---|---|
 | `terraform/bootstrap/` | Creates the S3 bucket that holds remote Terraform state | local (one-time - can't store the state bucket's own creation inside itself) |
-| `terraform/site/` | Private S3 bucket + CloudFront distribution serving the site | remote, S3 native locking |
+| `terraform/site/` | Private S3 bucket + CloudFront distribution serving the site, plus the `/admin` visitor-log dashboard | remote, S3 native locking |
 | `terraform/github-oidc/` | OIDC trust + IAM role so GitHub Actions can deploy without stored credentials | remote, S3 native locking |
+| `terraform/billing-alert/` | Account-wide AWS Budget that emails an alert if monthly cost crosses a threshold | remote, S3 native locking |
+
+`terraform/site/` and `terraform/github-oidc/` are wired into CI (the former auto-applies on merge; the
+latter is deliberately excluded - see below). `terraform/bootstrap/` and `terraform/billing-alert/` are
+account-level, one-off setup and are applied manually.
 
 ## Why this is secure
 
@@ -52,8 +57,12 @@ Three independent Terraform stages, each with its own state:
 
 ## Cost
 
-S3 + CloudFront fit inside the free tier at this traffic level. The only real cost is
-the domain itself: `mattwindham.dev` (~$17/yr) plus a Route 53 hosted zone
-(~$0.50/mo). Domain registration was the one step done manually rather than through
-Terraform - everything downstream of it (the ACM cert, DNS validation records, and
-CloudFront alias) is fully Terraform-managed.
+S3, CloudFront, Lambda, and API Gateway all fit inside the free tier at this traffic
+level. The only real recurring cost is the Route 53 hosted zone (~$0.50/mo), plus the
+domain itself: `mattwindham.dev` (~$17/yr). Domain registration was the one step done
+manually rather than through Terraform - everything downstream of it (the ACM cert,
+DNS validation records, and CloudFront alias) is fully Terraform-managed.
+
+`terraform/billing-alert/` sets up an AWS Budget that emails an alert if monthly
+account cost crosses a threshold, as a safety net against a misconfiguration causing
+runaway spend.
