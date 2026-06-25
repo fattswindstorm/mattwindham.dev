@@ -1,0 +1,336 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="My Submissions — Recruiter Portal — Matthew Windham"
+  description="View your submitted opportunities and replies from Matthew Windham."
+>
+  <main class="wrap">
+    <div class="top-row">
+      <h1>My Submissions</h1>
+      <button type="button" id="signout-btn" class="btn-link">Sign out</button>
+    </div>
+
+    <div id="empty-state" class="empty-state" hidden>
+      <p>You haven't submitted an opportunity yet.</p>
+      <a href="/opportunity" class="btn-submit">Submit an Opportunity</a>
+    </div>
+
+    <div id="threads" class="threads"></div>
+  </main>
+</Layout>
+
+<script>
+  import { requireAuth, authHeader, signOut } from "../../lib/auth";
+
+  interface Submission {
+    id: string;
+    job_title: string;
+    company: string;
+    submitted_at: string;
+  }
+
+  interface Message {
+    created_at: string;
+    sender_role: "owner" | "recruiter";
+    body: string;
+  }
+
+  const threadsEl = document.getElementById("threads") as HTMLDivElement;
+  const emptyEl = document.getElementById("empty-state") as HTMLDivElement;
+  const signoutBtn = document.getElementById("signout-btn") as HTMLButtonElement;
+
+  signoutBtn.addEventListener("click", signOut);
+
+  (async () => {
+    const claims = await requireAuth("/portal/dashboard");
+    if (!claims) return;
+
+    const headers = await authHeader();
+    const res = await fetch("/threads", { headers });
+    if (!res.ok) {
+      threadsEl.textContent = "Couldn't load your submissions. Try refreshing.";
+      return;
+    }
+    const { threads } = await res.json();
+
+    if (!threads.length) {
+      emptyEl.hidden = false;
+      return;
+    }
+
+    threads.forEach((t: Submission) => threadsEl.appendChild(renderThreadCard(t)));
+  })();
+
+  function renderThreadCard(thread: Submission): HTMLElement {
+    const card = document.createElement("div");
+    card.className = "thread-card";
+
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "thread-header";
+    header.innerHTML = `
+      <span class="thread-title">${escapeHtml(thread.job_title)} — ${escapeHtml(thread.company)}</span>
+      <span class="thread-date">${new Date(thread.submitted_at).toLocaleDateString()}</span>
+    `;
+
+    const body = document.createElement("div");
+    body.className = "thread-body";
+    body.hidden = true;
+
+    let loaded = false;
+    header.addEventListener("click", async () => {
+      body.hidden = !body.hidden;
+      if (!body.hidden && !loaded) {
+        loaded = true;
+        await loadThreadDetail(thread.id, body);
+      }
+    });
+
+    card.appendChild(header);
+    card.appendChild(body);
+    return card;
+  }
+
+  async function loadThreadDetail(id: string, container: HTMLDivElement) {
+    container.textContent = "Loading…";
+    const headers = await authHeader();
+    const res = await fetch(`/threads/${id}`, { headers });
+    if (!res.ok) {
+      container.textContent = "Couldn't load this thread.";
+      return;
+    }
+    const { messages } = await res.json();
+
+    container.innerHTML = "";
+    const list = document.createElement("div");
+    list.className = "message-list";
+    if (!messages.length) {
+      const p = document.createElement("p");
+      p.className = "no-messages";
+      p.textContent = "No replies yet.";
+      list.appendChild(p);
+    } else {
+      messages.forEach((m: Message) => list.appendChild(renderMessage(m)));
+    }
+    container.appendChild(list);
+    container.appendChild(renderReplyForm(id, list));
+  }
+
+  function renderMessage(m: Message): HTMLElement {
+    const el = document.createElement("div");
+    el.className = `message message--${m.sender_role}`;
+    el.innerHTML = `
+      <span class="message-sender">${m.sender_role === "owner" ? "Matthew" : "You"}</span>
+      <span class="message-date">${new Date(m.created_at).toLocaleString()}</span>
+      <p class="message-body"></p>
+    `;
+    (el.querySelector(".message-body") as HTMLParagraphElement).textContent = m.body;
+    return el;
+  }
+
+  function renderReplyForm(threadId: string, list: HTMLDivElement): HTMLElement {
+    const form = document.createElement("form");
+    form.className = "reply-form";
+    form.innerHTML = `
+      <textarea rows="3" placeholder="Write a reply…" required></textarea>
+      <button type="submit" class="btn-submit">Send</button>
+    `;
+    const textarea = form.querySelector("textarea") as HTMLTextAreaElement;
+    const btn = form.querySelector("button") as HTMLButtonElement;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const body = textarea.value.trim();
+      if (!body) return;
+      btn.disabled = true;
+
+      try {
+        const headers = await authHeader();
+        const res = await fetch(`/threads/${threadId}/messages`, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ body }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { message } = await res.json();
+        list.querySelector(".no-messages")?.remove();
+        list.appendChild(renderMessage(message));
+        textarea.value = "";
+      } catch (err) {
+        alert(`Couldn't send reply: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      btn.disabled = false;
+    });
+
+    return form;
+  }
+
+  function escapeHtml(s: string): string {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+</script>
+
+<style>
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3rem 0 2rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .empty-state {
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .empty-state .btn-submit {
+    align-self: flex-start;
+  }
+
+  .threads {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .thread-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .thread-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-raised);
+    border: none;
+    color: var(--text);
+    padding: 1rem 1.25rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .thread-date {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  .thread-body {
+    padding: 1.25rem;
+  }
+
+  .message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .no-messages {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .message {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+  }
+
+  .message--owner {
+    border-left: 2px solid var(--accent);
+  }
+
+  .message-sender {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .message-date {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-left: 0.6rem;
+  }
+
+  .message-body {
+    margin: 0.5rem 0 0;
+    white-space: pre-wrap;
+    font-size: 0.92rem;
+  }
+
+  .reply-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  textarea {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    padding: 0.6rem 0.8rem;
+    resize: vertical;
+    width: 100%;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .btn-submit {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>

@@ -12,7 +12,7 @@ NOTIFY_EMAIL = os.environ["NOTIFY_EMAIL"]
 FROM_EMAIL = os.environ["FROM_EMAIL"]
 
 REQUIRED = [
-    "name", "email", "company", "role",
+    "company", "role",
     "job_title", "job_description", "employment_type", "compensation_range",
 ]
 
@@ -41,6 +41,12 @@ def handler(event, context):
     if event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS":
         return {"statusCode": 200, "headers": headers, "body": ""}
 
+    claims = _claims(event)
+    sub = claims.get("sub")
+    email = claims.get("email")
+    if not sub or not email:
+        return {"statusCode": 401, "headers": headers, "body": json.dumps({"error": "Unauthorized"})}
+
     try:
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
@@ -61,8 +67,9 @@ def handler(event, context):
     record = {
         "id":                 str(uuid.uuid4()),
         "submitted_at":       datetime.now(timezone.utc).isoformat(),
-        "name":               body["name"].strip(),
-        "email":              body["email"].strip().lower(),
+        "owner_sub":          sub,
+        "name":               claims.get("name", "").strip(),
+        "email":              email.strip().lower(),
         "company":            body["company"].strip(),
         "recruiter_role":     body["role"],
         "job_title":          body["job_title"].strip(),
@@ -82,6 +89,10 @@ def handler(event, context):
         "headers": headers,
         "body": json.dumps({"ok": True, "low_comp": low_comp}),
     }
+
+
+def _claims(event):
+    return event.get("requestContext", {}).get("authorizer", {}).get("jwt", {}).get("claims", {}) or {}
 
 
 def _send_notification(r):

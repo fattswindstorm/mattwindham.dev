@@ -27,3 +27,15 @@ variable "notify_email" {
   type        = string
   default     = "windham.matt@gmail.com"
 }
+
+variable "google_client_id" {
+  description = "OAuth 2.0 client ID for the Google identity provider (Google Cloud Console)"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_secret" {
+  description = "OAuth 2.0 client secret for the Google identity provider (Google Cloud Console)"
+  type        = string
+  sensitive   = true
+}

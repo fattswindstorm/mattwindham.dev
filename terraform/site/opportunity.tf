@@ -12,6 +12,19 @@ resource "aws_dynamodb_table" "opportunities" {
     name = "id"
     type = "S"
   }
+
+  attribute {
+    name = "owner_sub"
+    type = "S"
+  }
+
+  # Lets a logged-in recruiter query "my submissions" by their Cognito sub
+  # instead of scanning the whole table.
+  global_secondary_index {
+    name            = "owner_sub-index"
+    hash_key        = "owner_sub"
+    projection_type = "ALL"
+  }
 }
 
 # SES domain verification
@@ -118,7 +131,7 @@ resource "aws_apigatewayv2_api" "opportunity" {
   cors_configuration {
     allow_origins = ["https://${var.domain_name}"]
     allow_methods = ["POST", "OPTIONS"]
-    allow_headers = ["Content-Type"]
+    allow_headers = ["Content-Type", "Authorization"]
     max_age       = 300
   }
 }
@@ -130,9 +143,29 @@ resource "aws_apigatewayv2_integration" "opportunity" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "opportunity" {
+resource "aws_apigatewayv2_authorizer" "opportunity_jwt" {
+  api_id           = aws_apigatewayv2_api.opportunity.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "resume-site-cognito-jwt"
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.portal.id]
+    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.recruiters.id}"
+  }
+}
+
+resource "aws_apigatewayv2_route" "opportunity_post" {
+  api_id             = aws_apigatewayv2_api.opportunity.id
+  route_key          = "POST /contact"
+  target             = "integrations/${aws_apigatewayv2_integration.opportunity.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.opportunity_jwt.id
+}
+
+resource "aws_apigatewayv2_route" "opportunity_options" {
   api_id    = aws_apigatewayv2_api.opportunity.id
-  route_key = "$default"
+  route_key = "OPTIONS /contact"
   target    = "integrations/${aws_apigatewayv2_integration.opportunity.id}"
 }
 
