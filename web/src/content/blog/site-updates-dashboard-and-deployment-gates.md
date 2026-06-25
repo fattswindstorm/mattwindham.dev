@@ -1,7 +1,7 @@
 ---
-title: "Site Updates: Visitor Dashboard, Security Hardening, and One-Tap Deploys"
+title: "Site Updates: Visitor Dashboard, Security Hardening, and Controlled Deploys"
 date: 2026-06-25
-description: "How I added a private visitor log dashboard, tightened security with geo-blocking and CloudFront headers, and set up a deployment approval gate I can trigger from my phone."
+description: "Adding a private visitor log dashboard, geo-blocking, security headers, a deployment approval gate, branch protection with no bypasses, and this blog."
 ---
 
 Since the [initial launch post](/blog/building-a-personal-site-on-aws), I've been iterating on the site. Here's what changed and why.
@@ -51,7 +51,7 @@ I added a GitHub Environment called `production` with myself as a required revie
 4. Tap the link → single "Approve deployment" button
 5. Deploy runs
 
-No code to enter, no app required beyond a browser. This is close to the "approve from notification" pattern I was after. On a phone it's: notification → tap → one button → done.
+No code to enter, no app required beyond a browser. On a phone it's: notification → tap → one button → done.
 
 The GitHub Environments feature handles all of this without any custom infrastructure — it's a repo setting and two lines of YAML. The environment also creates a proper deployment record in GitHub, so the deployments tab shows a history of every production release with who approved it and when.
 
@@ -61,8 +61,21 @@ With a few new AWS resources added (Lambda, API Gateway, S3 logs bucket), I set 
 
 The `aws_budgets_budget` Terraform resource handles this cleanly with a `notification` block — no SNS topic required for direct email alerts.
 
+## Blog
+
+The site now has a blog (you're reading it). Built with Astro's Content Layer API — Markdown files in `src/content/blog/`, a listing page at `/blog`, and individual post pages at `/blog/[id]`. Adding a post is dropping a `.md` file in the right directory and opening a PR. The CloudFront URL-rewriting function already handles the directory-style paths, so no infrastructure changes were needed.
+
 ## Branch protection
 
-The last piece: a GitHub Rulesets rule on `main` that requires all changes to go through pull requests. Direct pushes to main are blocked. This isn't strictly necessary on a solo project, but it means every change has a CI check (Terraform plan or site build) as part of the record, and the deployment approval gate always fires.
+A GitHub Rulesets rule on `main` locks down the repository:
+
+- **No direct pushes** — everything goes through a pull request
+- **No force pushes** — history is append-only
+- **No branch deletion**
+- **No bypass actors** — `current_user_can_bypass: "never"`, including the repo owner
+
+That last point is worth calling out. It's easy to add an "emergency bypass" for yourself and leave it there indefinitely. With no bypass configured, every change — including urgent ones — has to go through a PR and CI. The deployment gate then fires before anything reaches production.
+
+The two-checkpoint flow for every change: PR (CI runs, code is on record) → merge → environment approval (explicit deploy confirmation). Neither step can be skipped.
 
 All source for this site is on [GitHub](https://github.com/fattswindstorm/mattwindham.dev).
