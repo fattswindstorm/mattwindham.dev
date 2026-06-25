@@ -1,0 +1,186 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="Verify Email — Recruiter Portal — Matthew Windham"
+  description="Confirm your email to finish creating your recruiter portal account."
+>
+  <main class="wrap">
+    <h1>Verify Your Email</h1>
+    <p class="intro">
+      Enter the confirmation code we emailed you to finish creating your account.
+    </p>
+
+    <form id="verify-form" novalidate>
+      <div class="field">
+        <label for="email">Email <span class="req">*</span></label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="code">Confirmation Code <span class="req">*</span></label>
+        <input type="text" id="code" name="code" required autocomplete="one-time-code" inputmode="numeric" />
+      </div>
+
+      <div id="form-status" class="form-status" hidden></div>
+
+      <button type="submit" class="btn-submit">Verify</button>
+      <button type="button" id="resend-btn" class="btn-link">Resend code</button>
+    </form>
+  </main>
+</Layout>
+
+<script>
+  import { confirmSignUp, resendConfirmationCode } from "../../lib/auth";
+
+  const form = document.getElementById("verify-form") as HTMLFormElement;
+  const statusEl = document.getElementById("form-status") as HTMLDivElement;
+  const emailInput = document.getElementById("email") as HTMLInputElement;
+  const resendBtn = document.getElementById("resend-btn") as HTMLButtonElement;
+
+  const prefill = new URL(window.location.href).searchParams.get("email");
+  if (prefill) emailInput.value = prefill;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+    statusEl.hidden = true;
+
+    const email = emailInput.value.trim();
+    const code = (document.getElementById("code") as HTMLInputElement).value.trim();
+
+    try {
+      await confirmSignUp(email, code);
+      window.location.href = `/portal/login?verified=1&email=${encodeURIComponent(email)}`;
+    } catch (err) {
+      showStatus(err instanceof Error ? err.message : String(err));
+      submitBtn.disabled = false;
+    }
+  });
+
+  resendBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    if (!email) {
+      showStatus("Enter your email first.");
+      return;
+    }
+    resendBtn.disabled = true;
+    try {
+      await resendConfirmationCode(email);
+      showStatus("Code resent — check your inbox.", "notice");
+    } catch (err) {
+      showStatus(err instanceof Error ? err.message : String(err));
+    }
+    resendBtn.disabled = false;
+  });
+
+  function showStatus(msg: string, type: "error" | "notice" = "error") {
+    statusEl.textContent = msg;
+    statusEl.className = `form-status form-status--${type}`;
+    statusEl.hidden = false;
+  }
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 0.5rem;
+  }
+
+  .intro {
+    color: var(--text-dim);
+    margin: 0 0 2rem;
+    max-width: 50ch;
+    line-height: 1.7;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 420px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  label {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .req {
+    color: var(--accent);
+  }
+
+  input[type="text"],
+  input[type="email"] {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    width: 100%;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .form-status--error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff7070;
+  }
+
+  .form-status--notice {
+    background: rgba(255, 153, 0, 0.06);
+    border: 1px solid rgba(255, 153, 0, 0.25);
+    color: var(--text-dim);
+  }
+
+  .btn-submit {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-link {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+</style>

@@ -1,0 +1,219 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="Recruiter Portal — Register — Matthew Windham"
+  description="Register for the recruiter portal to submit opportunities to Matthew Windham."
+>
+  <main class="wrap">
+    <h1>Create an Account</h1>
+    <p class="intro">
+      Register to submit opportunities and read replies from inside the site.
+    </p>
+
+    <button type="button" id="google-btn" class="btn-google">Continue with Google</button>
+
+    <div class="divider"><span>or</span></div>
+
+    <form id="register-form" novalidate>
+      <div class="field">
+        <label for="name">Name <span class="req">*</span></label>
+        <input type="text" id="name" name="name" required autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="email">Email <span class="req">*</span></label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="password">Password <span class="req">*</span></label>
+        <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8" />
+        <p class="hint">At least 8 characters, with upper &amp; lower case, a number, and a symbol.</p>
+      </div>
+
+      <div id="form-status" class="form-status" hidden></div>
+
+      <button type="submit" class="btn-submit">Create Account</button>
+    </form>
+
+    <p class="alt-action">Already have an account? <a href="/portal/login">Log in</a></p>
+  </main>
+</Layout>
+
+<script>
+  import { signUp, redirectToGoogleSignIn } from "../../lib/auth";
+
+  const form = document.getElementById("register-form") as HTMLFormElement;
+  const statusEl = document.getElementById("form-status") as HTMLDivElement;
+  const googleBtn = document.getElementById("google-btn") as HTMLButtonElement;
+
+  const next = new URL(window.location.href).searchParams.get("next") || undefined;
+
+  googleBtn.addEventListener("click", () => {
+    redirectToGoogleSignIn(next);
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+    statusEl.hidden = true;
+
+    const name = (document.getElementById("name") as HTMLInputElement).value.trim();
+    const email = (document.getElementById("email") as HTMLInputElement).value.trim();
+    const password = (document.getElementById("password") as HTMLInputElement).value;
+
+    try {
+      await signUp(name, email, password);
+      window.location.href = `/portal/verify?email=${encodeURIComponent(email)}`;
+    } catch (err) {
+      showStatus(err instanceof Error ? err.message : String(err));
+      submitBtn.disabled = false;
+    }
+  });
+
+  function showStatus(msg: string) {
+    statusEl.textContent = msg;
+    statusEl.className = "form-status form-status--error";
+    statusEl.hidden = false;
+  }
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 0.5rem;
+  }
+
+  .intro {
+    color: var(--text-dim);
+    margin: 0 0 2rem;
+    max-width: 50ch;
+    line-height: 1.7;
+  }
+
+  .btn-google {
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .btn-google:hover {
+    border-color: var(--accent);
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider span {
+    padding: 0 0.75rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 420px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  label {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .req {
+    color: var(--accent);
+  }
+
+  .hint {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    width: 100%;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .form-status--error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff7070;
+  }
+
+  .btn-submit {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .alt-action {
+    margin-top: 2rem;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+</style>
