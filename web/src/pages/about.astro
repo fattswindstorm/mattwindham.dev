@@ -12,20 +12,30 @@ import Layout from "../layouts/Layout.astro";
 			<h1>About</h1>
 		</div>
 
-		<section>
+		<section class="bio">
 			<p>
-				I grew up in Montana, and eventually made my way down to Austin, Texas, where I now work
-				as a DevOps engineer. Outside of work I'm married, we have a dog, and most weekends you'll
-				find me out on a golf course somewhere around Texas.
+				I was born in Fort Worth, Texas, but my family moved to western Montana when I was three —
+				so I claim Montana. We settled in Kalispell the summer before fourth grade, and that's
+				where I grew up. Western Montana has a way of getting into you: winters on the slopes
+				snowboarding, summers hiking, fly fishing, rafting, and boating, with golf mixed in
+				whenever the weather allowed. It's a hard place to leave, and an easy one to miss.
 			</p>
-			<blockquote>
-				"Besides black art, there is only automation and mechanization."
-				<cite>- Federico García Lorca</cite>
-			</blockquote>
+			<p>
+				I went to the University of Montana and studied geology. Eventually I needed to actually
+				start a career, and an opportunity came up at Cummings Electrical to get into IT. Turned
+				out I liked it — and the deeper I got, the more it pulled me in. Systems, automation,
+				infrastructure: it clicked in a way geology never quite did. I've been building on it ever
+				since, moving from sysadmin to SRE to where I am now as a DevOps engineer.
+			</p>
+			<p>
+				These days I'm in Austin, married, and we have a dog. When I'm not at a screen you'll find
+				me at Zilker Park, on a golf course, or working through Austin's very long list of good
+				restaurants. Texas wasn't exactly part of the plan, but Austin has a way of keeping people.
+			</p>
 			<blockquote>
 				"If a human operator needs to touch your system during normal operations, you have a bug.
 				The definition of normal changes as your systems grow."
-				<cite>- Carla Geisser, Google SRE</cite>
+				<cite>— Carla Geisser, Google SRE</cite>
 			</blockquote>
 		</section>
 	</main>
@@ -44,8 +54,18 @@ import Layout from "../layouts/Layout.astro";
 		width: 140px;
 		height: 140px;
 		border-radius: 50%;
-		border: 2px solid var(--border);
+		object-fit: cover;
+		object-position: center top;
+		border: 2px solid rgba(255, 153, 0, 0.35);
+		box-shadow: 0 0 32px rgba(255, 153, 0, 0.12);
 		flex-shrink: 0;
+	}
+
+	.bio p {
+		color: var(--text-dim);
+		line-height: 1.75;
+		margin: 0 0 1.25rem;
+		max-width: 62ch;
 	}
 
 	h1 {
