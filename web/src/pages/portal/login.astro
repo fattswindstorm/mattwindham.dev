@@ -1,0 +1,231 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="Recruiter Portal — Log In — Matthew Windham"
+  description="Log in to the recruiter portal to submit opportunities to Matthew Windham."
+>
+  <main class="wrap">
+    <h1>Log In</h1>
+    <p class="intro">Log in to submit an opportunity or read a reply.</p>
+
+    <button type="button" id="google-btn" class="btn-google">Continue with Google</button>
+
+    <div class="divider"><span>or</span></div>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="email">Email <span class="req">*</span></label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="password">Password <span class="req">*</span></label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" />
+      </div>
+
+      <div id="form-status" class="form-status" hidden></div>
+
+      <button type="submit" class="btn-submit">Log In</button>
+    </form>
+
+    <p class="alt-action">Need an account? <a href="/portal/register">Register</a></p>
+  </main>
+</Layout>
+
+<script>
+  import { signInWithPassword, redirectToGoogleSignIn, getClaims, isAdmin, CognitoError } from "../../lib/auth";
+
+  const form = document.getElementById("login-form") as HTMLFormElement;
+  const statusEl = document.getElementById("form-status") as HTMLDivElement;
+  const googleBtn = document.getElementById("google-btn") as HTMLButtonElement;
+  const emailInput = document.getElementById("email") as HTMLInputElement;
+
+  const params = new URL(window.location.href).searchParams;
+  const next = params.get("next") || undefined;
+
+  const prefillEmail = params.get("email");
+  if (prefillEmail) emailInput.value = prefillEmail;
+  if (params.get("verified") === "1") showStatus("Email verified — log in below.", "notice");
+
+  googleBtn.addEventListener("click", () => {
+    redirectToGoogleSignIn(next);
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+    statusEl.hidden = true;
+
+    const email = emailInput.value.trim();
+    const password = (document.getElementById("password") as HTMLInputElement).value;
+
+    try {
+      await signInWithPassword(email, password);
+      await goToDestination();
+    } catch (err) {
+      if (err instanceof CognitoError && err.code === "UserNotConfirmedException") {
+        window.location.href = `/portal/verify?email=${encodeURIComponent(email)}`;
+        return;
+      }
+      showStatus(err instanceof Error ? err.message : String(err));
+      submitBtn.disabled = false;
+    }
+  });
+
+  async function goToDestination() {
+    const claims = await getClaims();
+    if (next) {
+      window.location.href = next;
+    } else if (isAdmin(claims)) {
+      window.location.href = "/portal/admin";
+    } else {
+      window.location.href = "/portal/dashboard";
+    }
+  }
+
+  function showStatus(msg: string, type: "error" | "notice" = "error") {
+    statusEl.textContent = msg;
+    statusEl.className = `form-status form-status--${type}`;
+    statusEl.hidden = false;
+  }
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 0.5rem;
+  }
+
+  .intro {
+    color: var(--text-dim);
+    margin: 0 0 2rem;
+    max-width: 50ch;
+    line-height: 1.7;
+  }
+
+  .btn-google {
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .btn-google:hover {
+    border-color: var(--accent);
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 1.5rem 0;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .divider span {
+    padding: 0 0.75rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 420px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  label {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .req {
+    color: var(--accent);
+  }
+
+  input[type="email"],
+  input[type="password"] {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    width: 100%;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .form-status--error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff7070;
+  }
+
+  .form-status--notice {
+    background: rgba(255, 153, 0, 0.06);
+    border: 1px solid rgba(255, 153, 0, 0.25);
+    color: var(--text-dim);
+  }
+
+  .btn-submit {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .alt-action {
+    margin-top: 2rem;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+</style>
