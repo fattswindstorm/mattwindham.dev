@@ -212,11 +212,20 @@ const contractRanges = [
       });
 
       if (res.ok) {
+        const json = await res.json();
         form.reset();
         compFt.hidden = true;
         compContract.hidden = true;
         contractLengthField.hidden = true;
-        showStatus("success", "Received — thank you. You'll hear back shortly.");
+
+        if (json.low_comp) {
+          showStatus(
+            "notice",
+            "Matthew Windham isn't seeking job opportunities in that pay range at the moment. He has your information and will be in touch if anything changes in the future."
+          );
+        } else {
+          showStatus("success", "Received — thank you. You'll hear back shortly.");
+        }
       } else {
         showStatus("error", "Something went wrong. Please try again or email me directly.");
       }
@@ -228,7 +237,7 @@ const contractRanges = [
     submitBtn.textContent = "Submit Opportunity";
   });
 
-  function showStatus(type: "success" | "error", msg: string) {
+  function showStatus(type: "success" | "error" | "notice", msg: string) {
     statusEl.textContent = msg;
     statusEl.className = `form-status form-status--${type}`;
     statusEl.hidden = false;
@@ -428,6 +437,13 @@ const contractRanges = [
     background: rgba(255, 80, 80, 0.08);
     border: 1px solid rgba(255, 80, 80, 0.25);
     color: #ff7070;
+  }
+
+  .form-status--notice {
+    background: rgba(255, 153, 0, 0.06);
+    border: 1px solid rgba(255, 153, 0, 0.25);
+    color: var(--text-dim);
+    line-height: 1.6;
   }
 
   /* Submit */
