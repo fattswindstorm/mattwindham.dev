@@ -27,10 +27,10 @@ const ftRanges = [
 ];
 
 const contractRanges = [
-  { value: "c-25-75",  label: "$25 – $75 / hr"  },
-  { value: "c-75-125", label: "$75 – $125 / hr" },
-  { value: "c-125-250",label: "$125 – $250 / hr"},
-  { value: "c-250+",   label: "$250+ / hr"      },
+  { value: "c-25-75",   label: "$25 – $75 / hr",   note: "~$52k – $156k / yr annualized (2,080 hrs)" },
+  { value: "c-75-125",  label: "$75 – $125 / hr",  note: "~$156k – $260k / yr annualized" },
+  { value: "c-125-250", label: "$125 – $250 / hr", note: "~$260k – $520k / yr annualized" },
+  { value: "c-250+",    label: "$250+ / hr",        note: "~$520k+ / yr annualized" },
 ];
 ---
 
@@ -103,7 +103,7 @@ const contractRanges = [
           </div>
         </div>
 
-        <!-- Full Time / C2H compensation -->
+        <!-- Full Time compensation -->
         <div class="field comp-group" id="comp-ft" hidden>
           <label>Compensation Range <span class="req">*</span></label>
           <p class="comp-note">
@@ -122,14 +122,19 @@ const contractRanges = [
           </div>
         </div>
 
-        <!-- Contract compensation -->
+        <!-- Contract / C2H compensation -->
         <div class="field comp-group" id="comp-contract" hidden>
           <label>Hourly Rate Range <span class="req">*</span></label>
-          <div class="comp-options comp-options--row">
+          <p class="comp-note">
+            Annualized estimates assume 2,080 hrs/yr and exclude benefits.
+            Contract-to-hire roles should reflect the contract billing rate.
+          </p>
+          <div class="comp-options">
             {contractRanges.map((r) => (
               <label class="comp-card">
                 <input type="radio" name="compensation_range" value={r.value} />
                 <span class="comp-label">{r.label}</span>
+                {r.note && <span class="comp-sub">{r.note}</span>}
               </label>
             ))}
           </div>
@@ -167,12 +172,12 @@ const contractRanges = [
   document.querySelectorAll('input[name="employment_type"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       const val = (radio as HTMLInputElement).value;
-      const isFtOrC2h = val === "full-time" || val === "c2h";
-      const isContract = val === "contract";
+      const isFt = val === "full-time";
+      const isHourly = val === "contract" || val === "c2h";
 
-      compFt.hidden = !isFtOrC2h;
-      compContract.hidden = !isContract;
-      contractLengthField.hidden = !(isContract || val === "c2h");
+      compFt.hidden = !isFt;
+      compContract.hidden = !isHourly;
+      contractLengthField.hidden = !isHourly;
 
       // Clear previously selected comp range when switching type
       document.querySelectorAll('input[name="compensation_range"]').forEach((r) => {
@@ -378,11 +383,6 @@ const contractRanges = [
     gap: 0.6rem;
   }
 
-  .comp-options--row {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
   .comp-card {
     display: flex;
     flex-direction: column;
@@ -472,10 +472,6 @@ const contractRanges = [
   @media (max-width: 600px) {
     .field-row {
       grid-template-columns: 1fr;
-    }
-
-    .comp-options--row {
-      flex-direction: column;
     }
   }
 </style>
