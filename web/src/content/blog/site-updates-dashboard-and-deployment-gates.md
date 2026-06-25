@@ -1,7 +1,7 @@
 ---
-title: "Site Updates: Visitor Dashboard, Security Hardening, and One-Tap Deploys"
+title: "Site Updates: Visitor Dashboard, Security Hardening, and Controlled Deploys"
 date: 2026-06-25
-description: "How I added a private visitor log dashboard, tightened security with geo-blocking and CloudFront headers, and set up a deployment approval gate I can trigger from my phone."
+description: "Adding a private visitor log dashboard, geo-blocking, security headers, a deployment approval gate, branch protection with a real review workflow, and this blog."
 ---
 
 Since the [initial launch post](/blog/building-a-personal-site-on-aws), I've been iterating on the site. Here's what changed and why.
@@ -61,8 +61,21 @@ With a few new AWS resources added (Lambda, API Gateway, S3 logs bucket), I set 
 
 The `aws_budgets_budget` Terraform resource handles this cleanly with a `notification` block — no SNS topic required for direct email alerts.
 
-## Branch protection
+## Blog
 
-The last piece: a GitHub Rulesets rule on `main` that requires all changes to go through pull requests. Direct pushes to main are blocked. This isn't strictly necessary on a solo project, but it means every change has a CI check (Terraform plan or site build) as part of the record, and the deployment approval gate always fires.
+The site now has a blog (you're reading it). Built with Astro's Content Layer API — Markdown files in `src/content/blog/`, a listing page at `/blog`, and individual post pages at `/blog/[id]`. Adding a post is dropping a `.md` file in the right directory and opening a PR. The CloudFront URL-rewriting function already handles the directory-style paths, so no infrastructure changes were needed.
+
+## Branch protection and the review workflow
+
+The last piece ties the deployment gate together with a proper code review step. A GitHub Rulesets rule on `main` blocks direct pushes and requires all changes to go through pull requests, with at least one approval before merge.
+
+The intent is a real team-style workflow even on a solo project: code changes come in as PRs from a contributor (in this case, Claude Code), I review the diff and approve, the PR merges, and the deployment gate fires before anything hits production. Two distinct checkpoints — code review and deployment approval — rather than a single unreviewed push-to-deploy.
+
+The practical setup:
+- **GitHub Ruleset**: requires PRs on `main`, 1 approval to merge, no force pushes, no branch deletion
+- **Bypass**: as repo owner I have `always` bypass, so I can push directly in a genuine emergency without being locked out of my own site
+- **GitHub Environment**: the `apply` and `deploy` jobs pause for explicit approval before running — the "tap to deploy" step that happens after the code review
+
+The combination means every change to production has two intentional approval moments: reviewing the code, and then separately confirming the deploy.
 
 All source for this site is on [GitHub](https://github.com/fattswindstorm/mattwindham.dev).
