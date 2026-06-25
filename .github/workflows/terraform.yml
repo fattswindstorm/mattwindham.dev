@@ -13,6 +13,7 @@ permissions:
   id-token: write
   contents: read
   pull-requests: write
+  deployments: write
 
 env:
   AWS_REGION: us-east-1
@@ -68,6 +69,7 @@ jobs:
   apply:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
