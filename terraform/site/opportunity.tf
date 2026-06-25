@@ -12,6 +12,19 @@ resource "aws_dynamodb_table" "opportunities" {
     name = "id"
     type = "S"
   }
+
+  attribute {
+    name = "owner_sub"
+    type = "S"
+  }
+
+  # Lets a logged-in recruiter query "my submissions" by their Cognito sub
+  # instead of scanning the whole table.
+  global_secondary_index {
+    name            = "owner_sub-index"
+    hash_key        = "owner_sub"
+    projection_type = "ALL"
+  }
 }
 
 # SES domain verification
