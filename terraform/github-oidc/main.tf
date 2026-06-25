@@ -284,6 +284,27 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
+    sid    = "IAMRoleManagementForCorrespondenceLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::955752000541:role/resume-site-correspondence*"]
+  }
+
+  statement {
     sid    = "DynamoDBManagement"
     effect = "Allow"
     actions = [
@@ -297,7 +318,44 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "dynamodb:DescribeContinuousBackups",
       "dynamodb:DescribeTimeToLive",
     ]
-    resources = ["arn:aws:dynamodb:us-east-1:955752000541:table/site-opportunities"]
+    resources = [
+      "arn:aws:dynamodb:us-east-1:955752000541:table/site-opportunities",
+      "arn:aws:dynamodb:us-east-1:955752000541:table/site-messages",
+    ]
+  }
+
+  statement {
+    sid    = "CognitoManagement"
+    effect = "Allow"
+    actions = [
+      "cognito-idp:CreateUserPool",
+      "cognito-idp:DeleteUserPool",
+      "cognito-idp:UpdateUserPool",
+      "cognito-idp:DescribeUserPool",
+      "cognito-idp:TagResource",
+      "cognito-idp:UntagResource",
+      "cognito-idp:ListTagsForResource",
+      "cognito-idp:CreateUserPoolDomain",
+      "cognito-idp:DeleteUserPoolDomain",
+      "cognito-idp:DescribeUserPoolDomain",
+      "cognito-idp:UpdateUserPoolDomain",
+      "cognito-idp:CreateIdentityProvider",
+      "cognito-idp:DeleteIdentityProvider",
+      "cognito-idp:UpdateIdentityProvider",
+      "cognito-idp:DescribeIdentityProvider",
+      "cognito-idp:ListIdentityProviders",
+      "cognito-idp:CreateUserPoolClient",
+      "cognito-idp:DeleteUserPoolClient",
+      "cognito-idp:UpdateUserPoolClient",
+      "cognito-idp:DescribeUserPoolClient",
+      "cognito-idp:CreateGroup",
+      "cognito-idp:DeleteGroup",
+      "cognito-idp:GetGroup",
+      "cognito-idp:UpdateGroup",
+    ]
+    # Domain operations don't support resource-level scoping, so this
+    # statement uses "*" rather than the userpool/* ARN pattern.
+    resources = ["*"]
   }
 
   statement {
