@@ -21,6 +21,7 @@ env:
   AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
   TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
   TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: windham.matt@gmail.com
 
 jobs:
   plan:

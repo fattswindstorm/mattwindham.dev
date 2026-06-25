@@ -1,0 +1,465 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const API_URL = "https://mattwindham.dev/contact";
+
+const ftRanges = [
+  {
+    value: "ft-50-150k",
+    label: "$50k – $150k / yr",
+    note: "Est. $65k – $175k equivalent as 1099 (SE tax + ~$12k/yr insurance premium)",
+  },
+  {
+    value: "ft-150-200k",
+    label: "$150k – $200k / yr",
+    note: "Est. $175k – $230k equivalent as 1099",
+  },
+  {
+    value: "ft-200-500k",
+    label: "$200k – $500k / yr",
+    note: "Est. $230k – $550k equivalent as 1099",
+  },
+  {
+    value: "ft-500k+",
+    label: "$500k+ / yr",
+    note: "Est. $550k+ equivalent as 1099",
+  },
+];
+
+const contractRanges = [
+  { value: "c-25-75",  label: "$25 – $75 / hr"  },
+  { value: "c-75-125", label: "$75 – $125 / hr" },
+  { value: "c-125-250",label: "$125 – $250 / hr"},
+  { value: "c-250+",   label: "$250+ / hr"      },
+];
+---
+
+<Layout
+  title="Submit an Opportunity — Matthew Windham"
+  description="Submit a job opportunity or contract inquiry for Matthew Windham, DevOps Engineer in Austin, TX."
+>
+  <main class="wrap">
+    <h1>Submit an Opportunity</h1>
+    <p class="intro">
+      Fill out the form below and I'll receive it directly. Fields marked with
+      compensation context help me respond quickly and accurately.
+    </p>
+
+    <form id="opp-form" novalidate>
+
+      <fieldset>
+        <legend>About You</legend>
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Name <span class="req">*</span></label>
+            <input type="text" id="name" name="name" required autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" name="email" required autocomplete="email" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="company">Company / Firm <span class="req">*</span></label>
+            <input type="text" id="company" name="company" required />
+          </div>
+          <div class="field">
+            <label for="role">Your Role <span class="req">*</span></label>
+            <select id="role" name="role" required>
+              <option value="" disabled selected>Select…</option>
+              <option value="internal-hr">Internal HR / Talent</option>
+              <option value="recruiter">External Recruiter / Headhunter</option>
+              <option value="hiring-manager">Hiring Manager</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>The Opportunity</legend>
+        <div class="field">
+          <label for="job-title">Position Title <span class="req">*</span></label>
+          <input type="text" id="job-title" name="job_title" required />
+        </div>
+        <div class="field">
+          <label for="jd">Job Description <span class="req">*</span></label>
+          <textarea id="jd" name="job_description" rows="6" required placeholder="Paste the JD or summarize the role and responsibilities…"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Employment Type <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="employment_type" value="full-time" required /> Full Time
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="employment_type" value="contract" /> Contract
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="employment_type" value="c2h" /> Contract-to-Hire
+            </label>
+          </div>
+        </div>
+
+        <!-- Full Time / C2H compensation -->
+        <div class="field comp-group" id="comp-ft" hidden>
+          <label>Compensation Range <span class="req">*</span></label>
+          <p class="comp-note">
+            1099 estimates reflect ~7.65% self-employment tax plus an estimated
+            $12k/yr increase in insurance premiums for joining a spouse's plan.
+            These are rough guides, not binding figures.
+          </p>
+          <div class="comp-options">
+            {ftRanges.map((r) => (
+              <label class={`comp-card ${r.value === "ft-50-150k" ? "comp-card--low" : ""}`}>
+                <input type="radio" name="compensation_range" value={r.value} />
+                <span class="comp-label">{r.label}</span>
+                {r.note && <span class="comp-sub">{r.note}</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <!-- Contract compensation -->
+        <div class="field comp-group" id="comp-contract" hidden>
+          <label>Hourly Rate Range <span class="req">*</span></label>
+          <div class="comp-options comp-options--row">
+            {contractRanges.map((r) => (
+              <label class="comp-card">
+                <input type="radio" name="compensation_range" value={r.value} />
+                <span class="comp-label">{r.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div class="field" id="contract-length-field" hidden>
+          <label for="contract-length">Contract Length</label>
+          <input type="text" id="contract-length" name="contract_length" placeholder="e.g. 6 months, 12 months, ongoing…" />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Anything Else?</legend>
+        <div class="field">
+          <label for="notes">Additional Notes</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Timeline, remote vs. on-site, team context, etc."></textarea>
+        </div>
+      </fieldset>
+
+      <div id="form-status" class="form-status" hidden></div>
+
+      <button type="submit" class="btn-submit">Submit Opportunity</button>
+    </form>
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById("opp-form") as HTMLFormElement;
+  const statusEl = document.getElementById("form-status") as HTMLDivElement;
+  const compFt = document.getElementById("comp-ft") as HTMLDivElement;
+  const compContract = document.getElementById("comp-contract") as HTMLDivElement;
+  const contractLengthField = document.getElementById("contract-length-field") as HTMLDivElement;
+
+  // Show/hide compensation ranges based on employment type
+  document.querySelectorAll('input[name="employment_type"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      const val = (radio as HTMLInputElement).value;
+      const isFtOrC2h = val === "full-time" || val === "c2h";
+      const isContract = val === "contract";
+
+      compFt.hidden = !isFtOrC2h;
+      compContract.hidden = !isContract;
+      contractLengthField.hidden = !(isContract || val === "c2h");
+
+      // Clear previously selected comp range when switching type
+      document.querySelectorAll('input[name="compensation_range"]').forEach((r) => {
+        (r as HTMLInputElement).checked = false;
+      });
+    });
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting…";
+    statusEl.hidden = true;
+
+    const data: Record<string, string> = {};
+    new FormData(form).forEach((val, key) => {
+      data[key] = val.toString();
+    });
+
+    // Client-side validation
+    const required = ["name", "email", "company", "role", "job_title", "job_description", "employment_type", "compensation_range"];
+    const missing = required.filter((k) => !data[k]);
+    if (missing.length) {
+      showStatus("error", "Please fill in all required fields.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Opportunity";
+      return;
+    }
+
+    try {
+      const res = await fetch("/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        form.reset();
+        compFt.hidden = true;
+        compContract.hidden = true;
+        contractLengthField.hidden = true;
+        showStatus("success", "Received — thank you. You'll hear back shortly.");
+      } else {
+        showStatus("error", "Something went wrong. Please try again or email me directly.");
+      }
+    } catch {
+      showStatus("error", "Could not reach the server. Please try again.");
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Opportunity";
+  });
+
+  function showStatus(type: "success" | "error", msg: string) {
+    statusEl.textContent = msg;
+    statusEl.className = `form-status form-status--${type}`;
+    statusEl.hidden = false;
+  }
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 0.5rem;
+  }
+
+  .intro {
+    color: var(--text-dim);
+    margin: 0 0 2.5rem;
+    max-width: 58ch;
+    line-height: 1.7;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 0;
+  }
+
+  legend {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 0 0.5rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+  }
+
+  .field:first-of-type {
+    margin-top: 0.5rem;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .field-row .field {
+    margin-top: 0;
+  }
+
+  label {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .req {
+    color: var(--accent);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  select,
+  textarea {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  select option {
+    background: var(--bg-raised);
+  }
+
+  /* Radio group */
+  .radio-group {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+  }
+
+  .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+  }
+
+  .radio-label:has(input:checked) {
+    color: var(--text);
+  }
+
+  /* Compensation cards */
+  .comp-note {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin: 0.25rem 0 0.75rem;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .comp-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .comp-options--row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .comp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .comp-card:has(input:checked) {
+    border-color: var(--accent);
+  }
+
+  .comp-card--low:has(input:checked) {
+    border-color: #555;
+    opacity: 0.7;
+  }
+
+  .comp-card input {
+    display: none;
+  }
+
+  .comp-label {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .comp-sub {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* Status */
+  .form-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .form-status--success {
+    background: rgba(0, 200, 100, 0.08);
+    border: 1px solid rgba(0, 200, 100, 0.25);
+    color: #5ddb97;
+  }
+
+  .form-status--error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff7070;
+  }
+
+  /* Submit */
+  .btn-submit {
+    align-self: flex-start;
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 600px) {
+    .field-row {
+      grid-template-columns: 1fr;
+    }
+
+    .comp-options--row {
+      flex-direction: column;
+    }
+  }
+</style>

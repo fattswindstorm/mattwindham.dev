@@ -263,6 +263,58 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
+    sid    = "IAMRoleManagementForOpportunityLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::955752000541:role/resume-site-opportunity*"]
+  }
+
+  statement {
+    sid    = "DynamoDBManagement"
+    effect = "Allow"
+    actions = [
+      "dynamodb:CreateTable",
+      "dynamodb:DeleteTable",
+      "dynamodb:DescribeTable",
+      "dynamodb:UpdateTable",
+      "dynamodb:ListTagsOfResource",
+      "dynamodb:TagResource",
+      "dynamodb:UntagResource",
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:DescribeTimeToLive",
+    ]
+    resources = ["arn:aws:dynamodb:us-east-1:955752000541:table/site-opportunities"]
+  }
+
+  statement {
+    sid    = "SESManagement"
+    effect = "Allow"
+    actions = [
+      "ses:VerifyDomainIdentity",
+      "ses:VerifyDomainDkim",
+      "ses:GetIdentityVerificationAttributes",
+      "ses:GetIdentityDkimAttributes",
+      "ses:DeleteIdentity",
+      "ses:ListIdentities",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "ApiGatewayManagement"
     effect = "Allow"
     actions = [
