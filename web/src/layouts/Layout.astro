@@ -7,17 +7,16 @@ interface Props {
 
 const { title, description, image = "/avatar.jpg" } = Astro.props;
 
-const navLinks = [
-	{ href: "/", label: "Home" },
-	{ href: "/about", label: "About" },
-	{ href: "/resume", label: "Resume" },
-	{ href: "/projects", label: "Projects" },
-	{ href: "/blog", label: "Blog" },
-];
-
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const imageURL = new URL(image, Astro.site);
+
+const tabs = [
+	{ href: "/about", label: "About" },
+	{ href: "/resume", label: "Resume" },
+	{ href: "/projects", label: "Projects" },
+	{ href: "/opportunity", label: "Recruiter" },
+];
 ---
 
 <html lang="en">
@@ -45,14 +44,26 @@ const imageURL = new URL(image, Astro.site);
 		<nav class="site-nav">
 			<div class="wrap nav-row">
 				<a class="brand" href="/">Matthew Windham</a>
-				<div class="nav-links">
-					{
-						navLinks.map((link) => (
-							<a href={link.href} class={pathname === link.href ? "active" : ""}>
-								{link.label}
+
+				<!-- Guest nav: shown by default, hidden once auth confirmed -->
+				<div class="nav-guest" id="nav-guest">
+					<a class="btn-signin" href="/portal/login">Sign In</a>
+				</div>
+
+				<!-- Auth nav: hidden by default, shown once auth confirmed -->
+				<div class="nav-auth" id="nav-auth" hidden>
+					<div class="nav-tabs">
+						{tabs.map((tab) => (
+							<a
+								href={tab.href}
+								class={pathname.startsWith(tab.href) ? "active" : ""}
+							>
+								{tab.label}
 							</a>
-						))
-					}
+						))}
+						<a href="/portal/admin" id="nav-admin" hidden>Admin</a>
+					</div>
+					<button type="button" id="nav-signout" class="btn-signout">Sign Out</button>
 				</div>
 			</div>
 		</nav>
@@ -62,6 +73,25 @@ const imageURL = new URL(image, Astro.site);
 		</footer>
 	</body>
 </html>
+
+<script>
+	import { getClaims, isAdmin, signOut } from "../lib/auth";
+
+	(async () => {
+		const claims = await getClaims();
+		const guestNav = document.getElementById("nav-guest")!;
+		const authNav = document.getElementById("nav-auth")!;
+		const adminLink = document.getElementById("nav-admin") as HTMLAnchorElement;
+
+		if (claims) {
+			guestNav.hidden = true;
+			authNav.hidden = false;
+			if (isAdmin(claims)) adminLink.hidden = false;
+		}
+
+		document.getElementById("nav-signout")?.addEventListener("click", signOut);
+	})();
+</script>
 
 <style is:global>
 	:root {
@@ -135,18 +165,63 @@ const imageURL = new URL(image, Astro.site);
 		color: var(--accent);
 	}
 
-	.nav-links {
+	.nav-guest {
+		display: flex;
+		align-items: center;
+	}
+
+	.btn-signin {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.4rem 1.1rem;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		color: var(--text);
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		font-weight: 500;
+		transition: border-color 0.15s, color 0.15s;
+	}
+
+	.btn-signin:hover {
+		text-decoration: none;
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.nav-auth {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+	}
+
+	.nav-tabs {
 		display: flex;
 		gap: 1.5rem;
 		font-family: var(--mono);
 		font-size: 0.9rem;
 	}
 
-	.nav-links a {
+	.nav-tabs a {
 		color: var(--text-dim);
 	}
 
-	.nav-links a.active {
+	.nav-tabs a.active {
+		color: var(--accent);
+	}
+
+	.btn-signout {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-dim);
+		font-family: var(--mono);
+		font-size: 0.85rem;
+		padding: 0;
+		transition: color 0.15s;
+	}
+
+	.btn-signout:hover {
 		color: var(--accent);
 	}
 
