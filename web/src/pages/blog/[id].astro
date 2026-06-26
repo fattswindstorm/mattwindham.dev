@@ -15,7 +15,7 @@ const { Content } = await render(post);
 const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 ---
 
-<Layout title={`${post.data.title} — Matthew Windham`} description={post.data.description}>
+<Layout requireAuth title={`${post.data.title} — Matthew Windham`} description={post.data.description}>
 	<main>
 		<div class="wrap">
 			<article>
@@ -163,8 +163,3 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', d
 		margin: 2.5rem 0;
 	}
 </style>
-
-<script>
-	import { requireAuth } from "../../lib/auth";
-	requireAuth(window.location.pathname);
-</script>
