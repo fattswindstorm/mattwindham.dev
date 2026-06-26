@@ -102,3 +102,8 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', d
 		color: var(--text-dim);
 	}
 </style>
+
+<script>
+	import { requireAuth } from "../../lib/auth";
+	requireAuth(window.location.pathname);
+</script>
