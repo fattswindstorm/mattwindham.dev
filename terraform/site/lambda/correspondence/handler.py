@@ -10,11 +10,13 @@ ses = boto3.client("ses", region_name="us-east-1")
 
 OPPORTUNITIES_TABLE = os.environ["OPPORTUNITIES_TABLE"]
 MESSAGES_TABLE = os.environ["MESSAGES_TABLE"]
+USER_SETTINGS_TABLE = os.environ["USER_SETTINGS_TABLE"]
 FROM_EMAIL = os.environ["FROM_EMAIL"]
 SITE_URL = os.environ["SITE_URL"]
 
 opportunities = dynamodb.Table(OPPORTUNITIES_TABLE)
 messages = dynamodb.Table(MESSAGES_TABLE)
+user_settings = dynamodb.Table(USER_SETTINGS_TABLE)
 
 CORS_HEADERS = {
     "Content-Type": "application/json",
@@ -133,11 +135,21 @@ def _post_message(event, thread_id, sub, is_admin):
 
 
 def _notify_reply(item):
+    owner_sub = item.get("owner_sub")
+    if owner_sub:
+        prefs = user_settings.get_item(Key={"sub": owner_sub}).get("Item", {})
+        if not prefs.get("email_notifications", True):
+            return
+
     subject = "[mattwindham.dev] Reply to your opportunity submission"
     body = (
         f"Matthew Windham replied to your opportunity submission "
         f"({item.get('job_title', 'your role')} at {item.get('company', 'your company')}).\n\n"
-        f"Log in to view and reply: {SITE_URL}/portal/dashboard\n"
+        f"Log in to view and reply: {SITE_URL}/portal/dashboard\n\n"
+        f"---\n"
+        f"You're receiving this because you submitted an opportunity on mattwindham.dev.\n"
+        f"Matthew Windham · Austin, TX\n"
+        f"Manage notification preferences: {SITE_URL}/portal/settings\n"
     )
     ses.send_email(
         Source=FROM_EMAIL,

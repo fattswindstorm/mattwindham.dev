@@ -1,0 +1,344 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  requireAuth
+  title="Account Settings — Matthew Windham"
+  description="Manage your notification preferences and account."
+>
+  <main class="wrap">
+    <h1>Account Settings</h1>
+
+    <section class="card">
+      <h2>Profile</h2>
+      <dl class="profile-grid">
+        <dt>Name</dt><dd id="profile-name">—</dd>
+        <dt>Email</dt><dd id="profile-email">—</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Notifications</h2>
+      <p class="hint">Control whether you receive an email when Matthew replies to your submission.</p>
+      <label class="toggle-row" id="notif-label">
+        <span class="toggle-text">
+          <span class="toggle-title">Email notifications</span>
+          <span class="toggle-desc" id="notif-desc">Loading…</span>
+        </span>
+        <span class="toggle-wrap">
+          <input type="checkbox" id="notif-toggle" disabled />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </span>
+      </label>
+    </section>
+
+    <section class="card danger-zone">
+      <h2>Danger Zone</h2>
+      <p class="hint">
+        Permanently deletes your account, all submitted opportunities, and all correspondence.
+        This cannot be undone.
+      </p>
+      <button type="button" id="delete-btn" class="btn-danger">Delete My Account</button>
+    </section>
+
+    <div id="status-msg" class="status-msg" hidden></div>
+  </main>
+</Layout>
+
+<dialog id="confirm-dialog" class="confirm-dialog">
+  <form method="dialog">
+    <h3>Delete your account?</h3>
+    <p>All your submissions and messages will be permanently removed. You'll be signed out immediately.</p>
+    <div class="dialog-actions">
+      <button type="submit" value="cancel" class="btn-cancel">Cancel</button>
+      <button type="submit" value="confirm" id="confirm-delete-btn" class="btn-danger">Yes, delete everything</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  import { getClaims, authHeader, clearTokens } from "../../lib/auth";
+
+  (async () => {
+    const claims = await getClaims();
+    if (!claims) return;
+
+    (document.getElementById("profile-name") as HTMLElement).textContent = claims.name || "—";
+    (document.getElementById("profile-email") as HTMLElement).textContent = claims.email || "—";
+
+    const headers = await authHeader();
+
+    // Load settings
+    const res = await fetch("/settings", { headers });
+    if (res.ok) {
+      const { settings } = await res.json();
+      applySettings(settings);
+    }
+
+    // Notification toggle
+    const toggle = document.getElementById("notif-toggle") as HTMLInputElement;
+    toggle.addEventListener("change", async () => {
+      toggle.disabled = true;
+      try {
+        const r = await fetch("/settings", {
+          method: "PUT",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ email_notifications: toggle.checked }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        updateDesc(toggle.checked);
+      } catch {
+        toggle.checked = !toggle.checked;
+        showStatus("Failed to save — please try again.", true);
+      }
+      toggle.disabled = false;
+    });
+
+    // Delete account
+    const deleteBtn = document.getElementById("delete-btn") as HTMLButtonElement;
+    const dialog = document.getElementById("confirm-dialog") as HTMLDialogElement;
+
+    deleteBtn.addEventListener("click", () => dialog.showModal());
+
+    dialog.addEventListener("close", async () => {
+      if (dialog.returnValue !== "confirm") return;
+      deleteBtn.disabled = true;
+      try {
+        const r = await fetch("/settings/account", { method: "DELETE", headers });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        clearTokens();
+        window.location.href = "/";
+      } catch {
+        showStatus("Account deletion failed — please try again.", true);
+        deleteBtn.disabled = false;
+      }
+    });
+  })();
+
+  function applySettings(settings: { email_notifications: boolean; created_at?: string }) {
+    const toggle = document.getElementById("notif-toggle") as HTMLInputElement;
+    toggle.checked = settings.email_notifications;
+    toggle.disabled = false;
+    updateDesc(settings.email_notifications);
+  }
+
+  function updateDesc(on: boolean) {
+    (document.getElementById("notif-desc") as HTMLElement).textContent = on
+      ? "You'll receive an email when Matthew replies"
+      : "You won't receive reply emails";
+  }
+
+  function showStatus(msg: string, error = false) {
+    const el = document.getElementById("status-msg") as HTMLElement;
+    el.textContent = msg;
+    el.className = "status-msg" + (error ? " status-error" : "");
+    el.hidden = false;
+    setTimeout(() => { el.hidden = true; }, 4000);
+  }
+</script>
+
+<style>
+  h1 {
+    font-size: 2rem;
+    margin: 3rem 0 2rem;
+  }
+
+  .card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    border: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+  }
+
+  .hint {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin: 0 0 1.25rem;
+  }
+
+  /* Profile */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .profile-grid dt {
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    align-self: center;
+  }
+
+  .profile-grid dd {
+    margin: 0;
+    align-self: center;
+  }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+  }
+
+  .toggle-title {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .toggle-desc {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+
+  .toggle-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .toggle-wrap input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    display: block;
+    width: 44px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .toggle-wrap input:checked + .toggle-track {
+    background: var(--accent);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+  }
+
+  .toggle-wrap input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(20px);
+  }
+
+  /* Danger */
+  .danger-zone h2 {
+    color: #e05252;
+  }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #e05252;
+    color: #e05252;
+    border-radius: 6px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-danger:hover {
+    background: #e05252;
+    color: #fff;
+  }
+
+  .btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Dialog */
+  .confirm-dialog {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 2rem;
+    max-width: 420px;
+    width: 90vw;
+  }
+
+  .confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .confirm-dialog h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+  }
+
+  .confirm-dialog p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem;
+  }
+
+  .dialog-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .btn-cancel:hover {
+    border-color: var(--text-dim);
+  }
+
+  /* Status */
+  .status-msg {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .status-error {
+    border-color: #e05252;
+    color: #e05252;
+  }
+</style>
