@@ -370,3 +370,8 @@ const buildingToward = [
 		font-size: 0.9rem;
 	}
 </style>
+
+<script>
+	import { requireAuth } from "../lib/auth";
+	requireAuth(window.location.pathname);
+</script>

@@ -355,3 +355,8 @@ const certifications = [
 		}
 	}
 </style>
+
+<script>
+	import { requireAuth } from "../lib/auth";
+	requireAuth(window.location.pathname);
+</script>

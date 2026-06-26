@@ -87,3 +87,8 @@ import Layout from "../layouts/Layout.astro";
 		}
 	}
 </style>
+
+<script>
+	import { requireAuth } from "../lib/auth";
+	requireAuth(window.location.pathname);
+</script>
