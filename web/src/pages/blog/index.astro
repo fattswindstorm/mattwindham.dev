@@ -8,7 +8,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
 const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 ---
 
-<Layout title="Blog — Matthew Windham" description="Writing on DevOps, AWS, infrastructure automation, and engineering.">
+<Layout requireAuth title="Blog — Matthew Windham" description="Writing on DevOps, AWS, infrastructure automation, and engineering.">
 	<main>
 		<div class="wrap">
 			<h1 class="page-title">Blog</h1>
@@ -102,8 +102,3 @@ const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', d
 		color: var(--text-dim);
 	}
 </style>
-
-<script>
-	import { requireAuth } from "../../lib/auth";
-	requireAuth(window.location.pathname);
-</script>

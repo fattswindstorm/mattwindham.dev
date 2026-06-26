@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout
+	requireAuth
 	title="About - Matthew Windham"
 	description="A little about Matthew Windham, DevOps engineer in Austin, Texas."
 >
@@ -87,8 +88,3 @@ import Layout from "../layouts/Layout.astro";
 		}
 	}
 </style>
-
-<script>
-	import { requireAuth } from "../lib/auth";
-	requireAuth(window.location.pathname);
-</script>

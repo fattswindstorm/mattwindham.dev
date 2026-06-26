@@ -3,9 +3,10 @@ interface Props {
 	title: string;
 	description: string;
 	image?: string;
+	requireAuth?: boolean;
 }
 
-const { title, description, image = "/avatar.jpg" } = Astro.props;
+const { title, description, image = "/avatar.jpg", requireAuth = false } = Astro.props;
 
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -39,8 +40,14 @@ const navLinks = [
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={imageURL} />
+		{requireAuth && (
+			<style>body.auth-pending main { visibility: hidden; }</style>
+		)}
 	</head>
-	<body>
+	<body class={requireAuth ? "auth-pending" : ""}>
+		{requireAuth && (
+			<script>document.body.classList.add("auth-pending");</script>
+		)}
 		<nav class="site-nav">
 			<div class="wrap nav-row">
 				<a class="brand" href="/">Matthew Windham</a>
@@ -106,7 +113,15 @@ const navLinks = [
 </html>
 
 <script>
-	import { getClaims, isAdmin, signOut } from "../lib/auth";
+	import { getClaims, isAdmin, signOut, requireAuth } from "../lib/auth";
+
+	// Centralized auth guard for protected pages
+	if (document.body.classList.contains("auth-pending")) {
+		(async () => {
+			const claims = await requireAuth(window.location.pathname);
+			if (claims) document.body.classList.remove("auth-pending");
+		})();
+	}
 
 	const btn = document.getElementById("account-btn")!;
 	const dropdown = document.getElementById("account-dropdown") as HTMLDivElement;

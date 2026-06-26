@@ -67,6 +67,7 @@ const buildingToward = [
 ---
 
 <Layout
+	requireAuth
 	title="Projects — Matthew Windham"
 	description="Current projects and learning roadmap for Matthew Windham — Azure, Kubernetes, and the path to senior-level DevOps."
 >
@@ -370,8 +371,3 @@ const buildingToward = [
 		font-size: 0.9rem;
 	}
 </style>
-
-<script>
-	import { requireAuth } from "../lib/auth";
-	requireAuth(window.location.pathname);
-</script>
