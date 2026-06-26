@@ -134,6 +134,7 @@ const certifications = [
 ---
 
 <Layout
+	requireAuth
 	title="Resume - Matthew Windham"
 	description="Resume for Matthew Windham - DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation."
 >
@@ -355,8 +356,3 @@ const certifications = [
 		}
 	}
 </style>
-
-<script>
-	import { requireAuth } from "../lib/auth";
-	requireAuth(window.location.pathname);
-</script>
