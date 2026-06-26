@@ -229,6 +229,17 @@ resource "aws_cloudfront_distribution" "site" {
     compress                 = true
   }
 
+  ordered_cache_behavior {
+    path_pattern             = "/settings*"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    target_origin_id         = "correspondence"
+    viewer_protocol_policy   = "redirect-to-https"
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    compress                 = true
+  }
+
   custom_error_response {
     error_code         = 403
     response_code      = 404
