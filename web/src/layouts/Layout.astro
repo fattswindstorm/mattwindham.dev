@@ -41,13 +41,10 @@ const navLinks = [
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={imageURL} />
 		{requireAuth && (
-			<style>body.auth-pending main { visibility: hidden; }</style>
+			<script is:inline>document.documentElement.classList.add("auth-pending");</script>
 		)}
 	</head>
-	<body class={requireAuth ? "auth-pending" : ""}>
-		{requireAuth && (
-			<script>document.body.classList.add("auth-pending");</script>
-		)}
+	<body>
 		<nav class="site-nav">
 			<div class="wrap nav-row">
 				<a class="brand" href="/">Matthew Windham</a>
@@ -116,10 +113,10 @@ const navLinks = [
 	import { getClaims, isAdmin, signOut, requireAuth } from "../lib/auth";
 
 	// Centralized auth guard for protected pages
-	if (document.body.classList.contains("auth-pending")) {
+	if (document.documentElement.classList.contains("auth-pending")) {
 		(async () => {
 			const claims = await requireAuth(window.location.pathname);
-			if (claims) document.body.classList.remove("auth-pending");
+			if (claims) document.documentElement.classList.remove("auth-pending");
 		})();
 	}
 
@@ -189,6 +186,8 @@ const navLinks = [
 		--mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 		--sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	}
+
+	html.auth-pending main { visibility: hidden; }
 
 	* { box-sizing: border-box; }
 
