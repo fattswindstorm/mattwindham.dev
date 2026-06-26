@@ -11,7 +11,7 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const imageURL = new URL(image, Astro.site);
 
-const tabs = [
+const navLinks = [
 	{ href: "/about", label: "About" },
 	{ href: "/resume", label: "Resume" },
 	{ href: "/projects", label: "Projects" },
@@ -45,29 +45,60 @@ const tabs = [
 			<div class="wrap nav-row">
 				<a class="brand" href="/">Matthew Windham</a>
 
-				<!-- Guest nav: shown by default, hidden once auth confirmed -->
-				<div class="nav-guest" id="nav-guest">
-					<a class="btn-signin" href="/portal/login">Sign In</a>
+				<div class="nav-links">
+					{navLinks.map((link) => (
+						<a
+							href={link.href}
+							class={pathname.startsWith(link.href) ? "active" : ""}
+						>
+							{link.label}
+						</a>
+					))}
 				</div>
 
-				<!-- Auth nav: hidden by default, shown once auth confirmed -->
-				<div class="nav-auth" id="nav-auth" hidden>
-					<div class="nav-tabs">
-						{tabs.map((tab) => (
-							<a
-								href={tab.href}
-								class={pathname.startsWith(tab.href) ? "active" : ""}
-							>
-								{tab.label}
-							</a>
-						))}
-						<a href="/portal/admin" id="nav-admin" hidden>Admin</a>
+				<!-- Account icon — always the same, no auth state needed -->
+				<div class="account-wrap">
+					<button
+						type="button"
+						class="account-btn"
+						id="account-btn"
+						aria-label="Account menu"
+						aria-expanded="false"
+						aria-haspopup="true"
+					>
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+							<circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+							<circle cx="10" cy="7.5" r="3" stroke="currentColor" stroke-width="1.5"/>
+							<path d="M3.5 16.5c0-3 3-5 6.5-5s6.5 2 6.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						</svg>
+					</button>
+
+					<div class="account-dropdown" id="account-dropdown" hidden>
+						<!-- Loading -->
+						<div id="acct-loading" class="acct-loading">
+							<span class="loading-dot"></span>
+						</div>
+
+						<!-- Logged out -->
+						<div id="acct-guest" hidden>
+							<a href="/portal/login" class="acct-action">Sign In</a>
+							<a href="/portal/register" class="acct-secondary">Create an account</a>
+						</div>
+
+						<!-- Logged in -->
+						<div id="acct-auth" hidden>
+							<p id="acct-name" class="acct-name"></p>
+							<hr class="acct-divider" />
+							<a href="/portal/admin" id="acct-admin" class="acct-item" hidden>Admin inbox</a>
+							<button type="button" id="acct-signout" class="acct-item acct-signout">Sign out</button>
+						</div>
 					</div>
-					<button type="button" id="nav-signout" class="btn-signout">Sign Out</button>
 				</div>
 			</div>
 		</nav>
+
 		<slot />
+
 		<footer class="wrap">
 			<p>Matthew Windham</p>
 		</footer>
@@ -77,20 +108,59 @@ const tabs = [
 <script>
 	import { getClaims, isAdmin, signOut } from "../lib/auth";
 
-	(async () => {
+	const btn = document.getElementById("account-btn")!;
+	const dropdown = document.getElementById("account-dropdown") as HTMLDivElement;
+	let loaded = false;
+
+	function openDropdown() {
+		dropdown.hidden = false;
+		btn.setAttribute("aria-expanded", "true");
+		if (!loaded) loadAuth();
+	}
+
+	function closeDropdown() {
+		dropdown.hidden = true;
+		btn.setAttribute("aria-expanded", "false");
+	}
+
+	btn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		dropdown.hidden ? openDropdown() : closeDropdown();
+	});
+
+	document.addEventListener("click", (e) => {
+		if (!dropdown.hidden && !dropdown.contains(e.target as Node)) closeDropdown();
+	});
+
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape") closeDropdown();
+	});
+
+	async function loadAuth() {
+		const loading = document.getElementById("acct-loading")!;
+		const guestEl = document.getElementById("acct-guest")!;
+		const authEl = document.getElementById("acct-auth")!;
+		const nameEl = document.getElementById("acct-name")!;
+		const adminLink = document.getElementById("acct-admin")!;
+
 		const claims = await getClaims();
-		const guestNav = document.getElementById("nav-guest")!;
-		const authNav = document.getElementById("nav-auth")!;
-		const adminLink = document.getElementById("nav-admin") as HTMLAnchorElement;
+		loading.hidden = true;
 
 		if (claims) {
-			guestNav.hidden = true;
-			authNav.hidden = false;
+			nameEl.textContent = claims.name || claims.email || "";
 			if (isAdmin(claims)) adminLink.hidden = false;
+			authEl.hidden = false;
+		} else {
+			guestEl.hidden = false;
 		}
 
-		document.getElementById("nav-signout")?.addEventListener("click", signOut);
-	})();
+		document.getElementById("acct-signout")?.addEventListener("click", () => {
+			closeDropdown();
+			signOut();
+		});
+
+		loaded = true;
+	}
 </script>
 
 <style is:global>
@@ -105,15 +175,9 @@ const tabs = [
 		--sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	}
 
-	* {
-		box-sizing: border-box;
-	}
+	* { box-sizing: border-box; }
 
-	html,
-	body {
-		margin: 0;
-		padding: 0;
-	}
+	html, body { margin: 0; padding: 0; }
 
 	body {
 		background: var(--bg);
@@ -123,18 +187,9 @@ const tabs = [
 		-webkit-font-smoothing: antialiased;
 	}
 
-	a {
-		color: var(--accent);
-		text-decoration: none;
-	}
-
-	a:hover {
-		text-decoration: underline;
-	}
-
-	code {
-		font-family: var(--mono);
-	}
+	a { color: var(--accent); text-decoration: none; }
+	a:hover { text-decoration: underline; }
+	code { font-family: var(--mono); }
 
 	.wrap {
 		max-width: 760px;
@@ -142,96 +197,170 @@ const tabs = [
 		padding: 0 1.5rem;
 	}
 
+	/* ── Nav ── */
 	.site-nav {
 		border-bottom: 1px solid var(--border);
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: var(--bg);
 	}
 
 	.nav-row {
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
-		padding: 1.25rem 0;
-		flex-wrap: wrap;
-		gap: 1rem;
+		gap: 2rem;
+		padding: 1rem 0;
 	}
 
 	.brand {
 		color: var(--text);
 		font-weight: 600;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
-	.brand:hover {
-		text-decoration: none;
-		color: var(--accent);
-	}
+	.brand:hover { text-decoration: none; color: var(--accent); }
 
-	.nav-guest {
-		display: flex;
-		align-items: center;
-	}
-
-	.btn-signin {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.4rem 1.1rem;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		color: var(--text);
-		font-family: var(--mono);
-		font-size: 0.85rem;
-		font-weight: 500;
-		transition: border-color 0.15s, color 0.15s;
-	}
-
-	.btn-signin:hover {
-		text-decoration: none;
-		border-color: var(--accent);
-		color: var(--accent);
-	}
-
-	.nav-auth {
-		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-	}
-
-	.nav-tabs {
+	.nav-links {
 		display: flex;
 		gap: 1.5rem;
 		font-family: var(--mono);
 		font-size: 0.9rem;
+		flex: 1;
 	}
 
-	.nav-tabs a {
-		color: var(--text-dim);
+	.nav-links a { color: var(--text-dim); }
+	.nav-links a:hover { text-decoration: none; color: var(--text); }
+	.nav-links a.active { color: var(--accent); }
+
+	/* ── Account dropdown ── */
+	.account-wrap {
+		position: relative;
+		flex-shrink: 0;
 	}
 
-	.nav-tabs a.active {
-		color: var(--accent);
-	}
-
-	.btn-signout {
+	.account-btn {
 		background: none;
-		border: none;
+		border: 1px solid var(--border);
+		border-radius: 50%;
+		width: 34px;
+		height: 34px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
 		color: var(--text-dim);
-		font-family: var(--mono);
-		font-size: 0.85rem;
+		transition: border-color 0.15s, color 0.15s;
 		padding: 0;
-		transition: color 0.15s;
 	}
 
-	.btn-signout:hover {
+	.account-btn:hover,
+	.account-btn[aria-expanded="true"] {
+		border-color: var(--accent);
 		color: var(--accent);
 	}
 
-	main {
-		padding: 3rem 0;
+	.account-dropdown {
+		position: absolute;
+		top: calc(100% + 8px);
+		right: 0;
+		min-width: 200px;
+		background: var(--bg-raised);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.5rem;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 	}
 
-	section {
-		margin-bottom: 3rem;
+	.acct-loading {
+		display: flex;
+		justify-content: center;
+		padding: 0.75rem;
 	}
+
+	.loading-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--accent);
+		animation: blink 1.2s ease-in-out infinite;
+	}
+
+	@keyframes blink {
+		0%, 100% { opacity: 0.3; }
+		50% { opacity: 1; }
+	}
+
+	.acct-name {
+		margin: 0;
+		padding: 0.4rem 0.6rem;
+		font-size: 0.8rem;
+		color: var(--text-dim);
+		font-family: var(--mono);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.acct-divider {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 0.25rem 0;
+	}
+
+	.acct-action {
+		display: block;
+		padding: 0.5rem 0.6rem;
+		color: var(--text);
+		font-size: 0.9rem;
+		border-radius: 5px;
+		transition: background 0.15s;
+	}
+
+	.acct-action:hover { text-decoration: none; background: var(--border); }
+
+	.acct-secondary {
+		display: block;
+		padding: 0.4rem 0.6rem;
+		color: var(--text-dim);
+		font-size: 0.85rem;
+		border-radius: 5px;
+		transition: background 0.15s;
+	}
+
+	.acct-secondary:hover { text-decoration: none; background: var(--border); }
+
+	.acct-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		padding: 0.5rem 0.6rem;
+		color: var(--text);
+		font-size: 0.9rem;
+		background: none;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		font-family: var(--sans);
+		transition: background 0.15s;
+		text-decoration: none;
+	}
+
+	.acct-item:hover { background: var(--border); text-decoration: none; }
+
+	.acct-signout { color: var(--text-dim); }
+
+	/* ── Mobile ── */
+	@media (max-width: 600px) {
+		.nav-links {
+			display: none;
+		}
+	}
+
+	/* ── Page ── */
+	main { padding: 3rem 0; }
+	section { margin-bottom: 3rem; }
 
 	h2 {
 		font-size: 1.4rem;
