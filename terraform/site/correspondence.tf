@@ -76,6 +76,13 @@ data "aws_iam_policy_document" "correspondence_permissions" {
     actions   = ["ses:SendEmail"]
     resources = ["*"]
   }
+
+  statement {
+    sid       = "ReadUserSettings"
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem"]
+    resources = [aws_dynamodb_table.user_settings.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "correspondence_permissions" {
@@ -98,6 +105,7 @@ resource "aws_lambda_function" "correspondence" {
     variables = {
       OPPORTUNITIES_TABLE = aws_dynamodb_table.opportunities.name
       MESSAGES_TABLE      = aws_dynamodb_table.messages.name
+      USER_SETTINGS_TABLE = aws_dynamodb_table.user_settings.name
       FROM_EMAIL          = "opportunity@${var.domain_name}"
       SITE_URL            = "https://${var.domain_name}"
     }
@@ -111,7 +119,7 @@ resource "aws_apigatewayv2_api" "correspondence" {
 
   cors_configuration {
     allow_origins = ["https://${var.domain_name}"]
-    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allow_headers = ["Content-Type", "Authorization"]
     max_age       = 300
   }
