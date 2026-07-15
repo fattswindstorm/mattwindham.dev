@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-site
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # group.name merges this with k8s/argocd's Ingress onto a single ALB
+    # (host-based routing) instead of provisioning two load balancers.
+    alb.ingress.kubernetes.io/group.name: eks-demo
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    # One-time value: the wildcard cert ARN from terraform/site/'s
+    # aws_acm_certificate.site (see terraform/site/main.tf's *.${domain_name}
+    # SAN). Fill this in once, manually, after PR2 is applied for real -
+    # it's stable across every eks-demo session, not templated per-run.
+    alb.ingress.kubernetes.io/certificate-arn: "__ACM_CERTIFICATE_ARN__"
+spec:
+  rules:
+    - host: demo.mattwindham.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-site
+                port:
+                  number: 80

@@ -1,0 +1,33 @@
+# Helm values for the official argo-cd chart (argoproj/argo-helm).
+# Installed by .github/workflows/spin-up-eks-demo.yml via:
+#   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+#     -f k8s/argocd/values.yaml --version 7.7.11
+# Pin/bump that --version alongside this file - it's a small recurring
+# maintenance chore, not automated here.
+
+configs:
+  cm:
+    # Anonymous read-only access so the public easter egg can link visitors
+    # straight into the dashboard with no credentials ever exposed.
+    users.anonymous.enabled: "true"
+  rbac:
+    policy.default: "role:readonly"
+
+server:
+  # ALB terminates TLS and talks HTTP to the server internally - without
+  # this, ArgoCD's own HTTPS redirect double-redirects behind the ALB.
+  insecure: true
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/group.name: eks-demo
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+      # Same one-time value as k8s/demo-site/ingress.yaml - see the comment
+      # there.
+      alb.ingress.kubernetes.io/certificate-arn: "__ACM_CERTIFICATE_ARN__"
+    hostname: argocd-demo.mattwindham.dev

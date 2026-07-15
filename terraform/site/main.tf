@@ -92,8 +92,11 @@ data "aws_route53_zone" "primary" {
 }
 
 resource "aws_acm_certificate" "site" {
-  domain_name               = var.domain_name
-  subject_alternative_names = ["www.${var.domain_name}"]
+  domain_name = var.domain_name
+  # "*.${var.domain_name}" covers demo.${var.domain_name} and argocd-demo.${var.domain_name}
+  # for the on-demand EKS/ArgoCD demo (terraform/eks-demo/), so that ephemeral
+  # stack never has to issue/wait on its own ACM cert.
+  subject_alternative_names = ["www.${var.domain_name}", "*.${var.domain_name}"]
   validation_method         = "DNS"
 
   lifecycle {
@@ -236,6 +239,21 @@ resource "aws_cloudfront_distribution" "site" {
     target_origin_id         = "correspondence"
     viewer_protocol_policy   = "redirect-to-https"
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    compress                 = true
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/lab*"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "correspondence"
+    viewer_protocol_policy = "redirect-to-https"
+    # Short-TTL (not Managed-CachingDisabled): GET /lab/status is public and
+    # polled by the site-wide easter egg - a few seconds of cache absorbs
+    # any realistic polling burst for near-zero cost. POST /lab/trigger and
+    # /lab/teardown are never cached regardless (not in cached_methods).
+    cache_policy_id          = aws_cloudfront_cache_policy.lab_status_short_ttl.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     compress                 = true
   }

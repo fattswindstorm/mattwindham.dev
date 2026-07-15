@@ -32,3 +32,8 @@ output "cognito_idp_response_redirect_uri" {
   description = "Redirect URI to register in Google Cloud Console as an authorized redirect URI"
   value       = "https://${aws_cognito_user_pool_domain.recruiters.domain}.auth.${var.aws_region}.amazoncognito.com/oauth2/idpresponse"
 }
+
+output "acm_certificate_arn" {
+  description = "Wildcard-SAN ACM cert ARN, consumed by terraform/eks-demo/ via remote state for the demo/argocd-demo subdomains"
+  value       = aws_acm_certificate.site.arn
+}
