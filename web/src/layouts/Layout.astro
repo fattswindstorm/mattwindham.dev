@@ -405,4 +405,21 @@ const navLinks = [
 		font-size: 0.9rem;
 		border-top: 1px solid var(--border);
 	}
+
+	@media print {
+		.site-nav,
+		footer {
+			display: none;
+		}
+
+		body {
+			background: #fff;
+			color: #000;
+		}
+
+		a {
+			color: #000;
+			text-decoration: none;
+		}
+	}
 </style>

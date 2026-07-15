@@ -1,6 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
+const summary =
+	"DevOps/SRE engineer pivoting into Sales/Solutions Engineering. Nine years building and operating the infrastructure that SE teams sell — AWS migrations, Terraform, CI/CD, and observability tooling. Deployed Datadog in production as an end user before ever pitching it, and spent years translating system behavior into dashboards and findings for non-specialist stakeholders.";
+
 const experience = [
 	{
 		company: "Ren",
@@ -9,12 +12,11 @@ const experience = [
 		start: "Jun 2024",
 		end: "Present",
 		bullets: [
-			"Migrated on-premise infrastructure to AWS, expanding the cloud footprint across multiple production environments.",
-			"Provisioned and managed cloud infrastructure as code using Terraform.",
-			"Leading migration of TeamCity CI/CD pipelines to GitHub Actions, modernizing the team's delivery toolchain.",
-			"Managed application release pipelines in Octopus Deploy across multiple deployment targets.",
-			"Deployed Datadog as the team's observability platform and automated its configuration via PowerShell modules.",
-			"Incorporated AI coding tools into daily infrastructure workflows to increase development velocity.",
+			"Deployed Datadog as the team's observability platform end-to-end — configuration, integrations, and rollout — giving firsthand implementer experience with the exact product category Datadog SEs sell.",
+			"Led migration of CI/CD pipelines from TeamCity to GitHub Actions, evaluating tooling tradeoffs and presenting the migration plan to stakeholders.",
+			"Migrated on-premise infrastructure to AWS, regularly explaining architecture decisions and tradeoffs to engineering and leadership audiences.",
+			"Provisioned cloud infrastructure as code using Terraform across production environments.",
+			"Adopted AI coding tools into daily workflows, evaluating and pitching new tooling to the team.",
 		],
 	},
 	{
@@ -24,9 +26,9 @@ const experience = [
 		start: "Feb 2023",
 		end: "Jun 2024",
 		bullets: [
-			"Developed PowerShell modules to automate Windows Server administration, reducing recurring manual workload.",
-			"Built operational dashboards in the Elastic Stack to surface system health and key performance metrics.",
-			"Implemented Microsoft Endpoint Manager to standardize and automate Windows Server patch management across on-premise infrastructure.",
+			"Built operational dashboards in the Elastic Stack that translated raw system telemetry into findings non-technical stakeholders could act on.",
+			"Developed PowerShell automation modules, reducing manual workload and freeing time for higher-value technical conversations with internal teams.",
+			"Standardized Windows Server patch management via Microsoft Endpoint Manager, presenting the rollout plan across teams.",
 		],
 	},
 	{
@@ -36,9 +38,9 @@ const experience = [
 		start: "Nov 2022",
 		end: "May 2023",
 		bullets: [
-			"Led migration of on-premise workloads to AWS, transitioning core infrastructure to the cloud.",
-			"Maintained on-premise infrastructure stability throughout the migration, ensuring continuity of service.",
-			"Developed internal monitoring tools and automation scripts to reduce operational overhead.",
+			"Led migration of on-premise workloads to AWS, acting as the technical point of contact across the transition.",
+			"Maintained infrastructure stability throughout a major migration — the kind of technical trust-building a POC or pilot depends on.",
+			"Built internal monitoring tools and automation scripts, then walked teams through how and why they worked.",
 		],
 	},
 	{
@@ -48,12 +50,10 @@ const experience = [
 		start: "Apr 2021",
 		end: "Nov 2022",
 		bullets: [
-			"Owned reliability across on-premise and cloud environments — provisioning, configuring, and maintaining OS, application, and system management infrastructure.",
-			"Collaborated with Engineering, Security, QA, and Product to improve reliability, availability, and security of shared infrastructure.",
-			"Wrote runbooks and automated recurring operational tasks to eliminate manual toil.",
-			"Planned and executed security patching across applications and infrastructure on a recurring cycle.",
-			"Drove initial AWS integration into company infrastructure, improving scalability and laying groundwork for full cloud migration.",
-			"Participated in on-call rotation covering incident response, service requests, maintenance, and server provisioning.",
+			"Partnered daily with Engineering, Security, QA, and Product — the same cross-functional muscle an SE uses bridging sales and engineering.",
+			"Wrote runbooks that turned tribal knowledge into documentation other teams could self-serve from.",
+			"Drove the company's initial AWS integration, scoping and pitching the technical case for cloud adoption internally.",
+			"Participated in on-call incident response — deep, first-hand familiarity with the operational pain points technical buyers are trying to solve.",
 		],
 	},
 	{
@@ -73,39 +73,34 @@ const experience = [
 		start: "May 2016",
 		end: "Aug 2019",
 		bullets: [
-			"Managed hardware and software systems for the business as part of a small IT team.",
-			"Owned remote access tooling, data backup and restore, Windows Server administration, and mobile device management.",
-			"Built a standardized IT environment that scaled to support 350+ employees across 15+ locations as the company grew.",
+			"Built and scaled a standardized IT environment supporting 350+ employees across 15+ locations.",
+			"Owned remote access tooling, backup/restore, and Windows Server administration for a small IT team.",
 		],
 	},
 ];
 
 const skillGroups = [
 	{
-		label: "Cloud & DevOps",
-		items: ["AWS", "Terraform", "GitHub Actions", "Octopus Deploy", "TeamCity", "Datadog", "Elastic Stack"],
+		label: "Customer-Facing Technical Skills",
+		items: [
+			"Technical demos & walkthroughs",
+			"Dashboard & findings presentation",
+			"Cross-functional stakeholder communication",
+			"Runbook & documentation writing",
+			"Discovery & requirements translation",
+		],
+	},
+	{
+		label: "Cloud & Observability",
+		items: ["AWS", "Terraform", "Datadog", "Elastic Stack", "GitHub Actions", "Octopus Deploy"],
 	},
 	{
 		label: "Infrastructure",
-		items: [
-			"Windows Server",
-			"Active Directory",
-			"VMware ESXi",
-			"Hyper-V",
-			"Nutanix",
-			"IIS",
-			"Cisco Systems",
-			"DNS",
-			"VPN",
-		],
+		items: ["Windows Server", "Active Directory", "VMware ESXi", "Hyper-V", "Nutanix", "Networking (DNS/VPN/Cisco)"],
 	},
 	{
 		label: "Scripting & Automation",
 		items: ["PowerShell", "Python", "Bash"],
-	},
-	{
-		label: "Operations",
-		items: ["Incident Response", "Server Management", "Microsoft Exchange", "Troubleshooting", "Team Leadership"],
 	},
 ];
 
@@ -134,16 +129,17 @@ const certifications = [
 ---
 
 <Layout
-	title="Resume - Matthew Windham"
-	description="Resume for Matthew Windham - DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation."
+	title="Resume (Sales Engineer track) - Matthew Windham"
+	description="Sales/Solutions Engineer-pivoted resume for Matthew Windham, drawing on DevOps/SRE experience with AWS, Terraform, and Datadog."
 >
 	<main class="wrap">
 		<div class="resume-header">
-			<h1>Resume</h1>
+			<h1>Resume — Sales Engineer track</h1>
 			<span class="updated">Updated {lastUpdated}</span>
 			<button type="button" class="btn-print" id="print-btn">Print / Save as PDF</button>
-			<a class="btn-opportunity" href="/opportunity">Submit an Opportunity →</a>
 		</div>
+
+		<p class="summary">{summary}</p>
 
 		<section>
 			<h2>Experience</h2>
@@ -251,24 +247,14 @@ const certifications = [
 		color: var(--accent);
 	}
 
-	.btn-opportunity {
-		font-size: 0.85rem;
-		font-family: var(--mono);
-		color: var(--accent);
-		border: 1px solid rgba(255, 153, 0, 0.35);
-		border-radius: 999px;
-		padding: 0.3rem 0.9rem;
-		white-space: nowrap;
-	}
-
-	.btn-opportunity:hover {
-		text-decoration: none;
-		background: rgba(255, 153, 0, 0.08);
+	.summary {
+		color: var(--text-dim);
+		max-width: 640px;
+		margin-bottom: 2.5rem;
 	}
 
 	@media print {
-		.btn-print,
-		.btn-opportunity {
+		.btn-print {
 			display: none;
 		}
 
