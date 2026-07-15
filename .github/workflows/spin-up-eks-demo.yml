@@ -1,0 +1,149 @@
+name: Spin Up EKS Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: eks-demo-lifecycle
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-eks-demo-lifecycle
+  TF_WORKING_DIR: terraform/eks-demo
+  CLUSTER_NAME: eks-demo
+  ALB_CONTROLLER_CHART_VERSION: "1.8.2"
+  ARGOCD_CHART_VERSION: "7.7.11"
+  DYNAMODB_STATUS_TABLE: site-eks-demo-status
+  DEMO_HOST: demo.mattwindham.dev
+  ARGOCD_HOST: argocd-demo.mattwindham.dev
+
+jobs:
+  spin-up:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Capture Terraform outputs
+        id: tf
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "alb_controller_role_arn=$(terraform output -raw alb_controller_role_arn)" >> "$GITHUB_OUTPUT"
+          echo "acm_certificate_arn=$(terraform output -raw acm_certificate_arn)" >> "$GITHUB_OUTPUT"
+          echo "vpc_id=$(terraform output -raw vpc_id)" >> "$GITHUB_OUTPUT"
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION"
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install AWS Load Balancer Controller
+        run: |
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            --version "$ALB_CONTROLLER_CHART_VERSION" \
+            -n kube-system \
+            --set clusterName="$CLUSTER_NAME" \
+            --set region="$AWS_REGION" \
+            --set vpcId="${{ steps.tf.outputs.vpc_id }}" \
+            --set serviceAccount.create=true \
+            --set serviceAccount.name=aws-load-balancer-controller \
+            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="${{ steps.tf.outputs.alb_controller_role_arn }}" \
+            --wait --timeout 5m
+
+      - name: Install ArgoCD
+        run: |
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo update
+          helm upgrade --install argocd argo/argo-cd \
+            --version "$ARGOCD_CHART_VERSION" \
+            -n argocd --create-namespace \
+            -f k8s/argocd/values.yaml \
+            --set-string server.ingress.annotations."alb\.ingress\.kubernetes\.io/certificate-arn"="${{ steps.tf.outputs.acm_certificate_arn }}" \
+            --wait --timeout 5m
+
+      - name: Bootstrap GitOps Application
+        run: kubectl apply -f k8s/argocd/application.yaml
+
+      - name: Wait for ALB to come up
+        id: alb
+        run: |
+          for i in $(seq 1 30); do
+            HOSTNAME=$(kubectl get ingress demo-site -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            if [ -n "$HOSTNAME" ]; then
+              echo "hostname=$HOSTNAME" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Waiting for ALB hostname... ($i/30)"
+            sleep 10
+          done
+          echo "::error::ALB never reported a hostname after 5 minutes"
+          exit 1
+
+      - name: Point DNS at the ALB
+        run: |
+          ZONE_ID=Z090356212OBKYAPYDLK1
+          ALB_HOSTNAME="${{ steps.alb.outputs.hostname }}"
+          for HOST in "$DEMO_HOST" "$ARGOCD_HOST"; do
+            aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch "$(cat <<EOF
+          {
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "$HOST",
+                "Type": "CNAME",
+                "TTL": 60,
+                "ResourceRecords": [{"Value": "$ALB_HOSTNAME"}]
+              }
+            }]
+          }
+          EOF
+          )"
+          done
+
+      - name: Record status=active
+        if: success()
+        run: |
+          aws dynamodb put-item --table-name "$DYNAMODB_STATUS_TABLE" --item "$(cat <<EOF
+          {
+            "id": {"S": "cluster"},
+            "status": {"S": "active"},
+            "demo_url": {"S": "https://$DEMO_HOST"},
+            "argocd_url": {"S": "https://$ARGOCD_HOST"},
+            "ready_at": {"S": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"},
+            "workflow_run_id": {"S": "${{ github.run_id }}"}
+          }
+          EOF
+          )"
+
+      - name: Record status=error on failure
+        if: failure()
+        run: |
+          aws dynamodb put-item --table-name "$DYNAMODB_STATUS_TABLE" --item "$(cat <<EOF
+          {
+            "id": {"S": "cluster"},
+            "status": {"S": "error"},
+            "workflow_run_id": {"S": "${{ github.run_id }}"}
+          }
+          EOF
+          )" || true

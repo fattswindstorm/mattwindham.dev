@@ -39,3 +39,15 @@ variable "google_client_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "github_repo" {
+  description = "GitHub repo the cluster-control Lambda dispatches eks-demo lifecycle workflows against, as owner/name"
+  type        = string
+  default     = "fattswindstorm/mattwindham.dev"
+}
+
+variable "github_dispatch_token" {
+  description = "Fine-grained GitHub PAT (Actions: Read and write on this repo only) used to dispatch spin-up-eks-demo.yml/teardown-eks-demo.yml"
+  type        = string
+  sensitive   = true
+}
