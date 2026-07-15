@@ -1,0 +1,233 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout
+  title="Lab — Recruiter Portal — Matthew Windham"
+  description="Admin control for the on-demand EKS/ArgoCD demo."
+>
+  <main class="wrap">
+    <div class="top-row">
+      <h1>Lab</h1>
+      <button type="button" id="signout-btn" class="btn-link">Sign out</button>
+    </div>
+
+    <p class="intro">
+      Spins up a full EKS cluster running ArgoCD via GitOps, hosting a live copy of this site. Takes
+      ~15-20 minutes to come up, tears itself down automatically every night at
+      <span class="mono">05:00 UTC</span> regardless.
+    </p>
+
+    <div id="status-card" class="status-card">
+      <div class="status-row">
+        <span class="status-label">Status</span>
+        <span id="status-value" class="status-value">loading…</span>
+      </div>
+      <div id="links" class="links" hidden>
+        <a id="demo-link" href="#" target="_blank" rel="noopener">Live demo →</a>
+        <a id="argocd-link" href="#" target="_blank" rel="noopener">ArgoCD dashboard →</a>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="trigger-btn" class="btn-submit">Spin up demo cluster</button>
+      <button type="button" id="teardown-btn" class="btn-link" hidden>Tear down now</button>
+    </div>
+
+    <p id="action-status" class="action-status" hidden></p>
+  </main>
+</Layout>
+
+<script>
+  import { requireAuth, authHeader, signOut, isAdmin } from "../../lib/auth";
+
+  interface Status {
+    status: "idle" | "provisioning" | "active" | "destroying" | "error";
+    demo_url: string | null;
+    argocd_url: string | null;
+  }
+
+  const statusValueEl = document.getElementById("status-value") as HTMLSpanElement;
+  const linksEl = document.getElementById("links") as HTMLDivElement;
+  const demoLinkEl = document.getElementById("demo-link") as HTMLAnchorElement;
+  const argocdLinkEl = document.getElementById("argocd-link") as HTMLAnchorElement;
+  const triggerBtn = document.getElementById("trigger-btn") as HTMLButtonElement;
+  const teardownBtn = document.getElementById("teardown-btn") as HTMLButtonElement;
+  const actionStatusEl = document.getElementById("action-status") as HTMLParagraphElement;
+  const signoutBtn = document.getElementById("signout-btn") as HTMLButtonElement;
+
+  signoutBtn.addEventListener("click", signOut);
+
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  (async () => {
+    const claims = await requireAuth("/portal/lab");
+    if (!claims) return;
+    if (!isAdmin(claims)) {
+      window.location.href = "/portal/dashboard";
+      return;
+    }
+
+    triggerBtn.addEventListener("click", () => trigger("/lab/trigger", "Spinning up…"));
+    teardownBtn.addEventListener("click", () => trigger("/lab/teardown", "Tearing down…"));
+
+    await refreshStatus();
+    pollTimer = setInterval(refreshStatus, 10_000);
+  })();
+
+  async function refreshStatus() {
+    try {
+      const res = await fetch("/lab/status");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: Status = await res.json();
+      render(data);
+    } catch {
+      statusValueEl.textContent = "Couldn't load status";
+    }
+  }
+
+  function render(data: Status) {
+    statusValueEl.textContent = data.status;
+    statusValueEl.className = `status-value status-value--${data.status}`;
+
+    const isActive = data.status === "active";
+    const isIdle = data.status === "idle";
+
+    linksEl.hidden = !isActive;
+    if (isActive && data.demo_url) demoLinkEl.href = data.demo_url;
+    if (isActive && data.argocd_url) argocdLinkEl.href = data.argocd_url;
+
+    triggerBtn.hidden = !isIdle;
+    teardownBtn.hidden = !isActive;
+    triggerBtn.disabled = !isIdle;
+  }
+
+  async function trigger(path: string, pendingLabel: string) {
+    triggerBtn.disabled = true;
+    teardownBtn.disabled = true;
+    actionStatusEl.hidden = false;
+    actionStatusEl.textContent = pendingLabel;
+
+    try {
+      const headers = await authHeader();
+      const res = await fetch(path, { method: "POST", headers });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        actionStatusEl.textContent = json.error || `HTTP ${res.status}`;
+      } else {
+        actionStatusEl.textContent = "Dispatched.";
+        await refreshStatus();
+      }
+    } catch (err) {
+      actionStatusEl.textContent = `Couldn't reach the API: ${err instanceof Error ? err.message : String(err)}`;
+    }
+
+    teardownBtn.disabled = false;
+  }
+</script>
+
+<style>
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3rem 0 1.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .intro {
+    color: var(--text-dim);
+    max-width: 640px;
+    margin-bottom: 2rem;
+  }
+
+  .mono {
+    font-family: var(--mono);
+  }
+
+  .status-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .status-label {
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  .status-value {
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  .status-value--active {
+    color: var(--accent);
+  }
+
+  .status-value--error {
+    color: #ff6b6b;
+  }
+
+  .links {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .btn-submit {
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .action-status {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    margin-top: 1rem;
+  }
+</style>

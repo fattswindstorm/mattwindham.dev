@@ -1,0 +1,149 @@
+name: Teardown EKS Demo
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Fixed UTC cron - GitHub Actions doesn't support timezones or DST.
+    # 05:00 UTC = midnight US Central during CDT (~8 months/year); drifts to
+    # ~11pm Central during CST (~4 winter months) - accepted drift for a cost
+    # safety net. Runs every night regardless of whether a cluster is up -
+    # see the early-exit guard below.
+    - cron: '0 5 * * *'
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: eks-demo-lifecycle
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-eks-demo-lifecycle
+  TF_WORKING_DIR: terraform/eks-demo
+  CLUSTER_NAME: eks-demo
+  DYNAMODB_STATUS_TABLE: site-eks-demo-status
+  DEMO_HOST: demo.mattwindham.dev
+  ARGOCD_HOST: argocd-demo.mattwindham.dev
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The nightly schedule fires every night whether or not a session is
+      # active - most nights there's nothing to tear down. Treat "cluster
+      # doesn't exist" as already-idle, not a failure.
+      - name: Check whether there's anything to tear down
+        id: check
+        run: |
+          if aws eks describe-cluster --name "$CLUSTER_NAME" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: hashicorp/setup-terraform@v3
+        if: steps.check.outputs.exists == 'true'
+
+      - name: Update kubeconfig
+        if: steps.check.outputs.exists == 'true'
+        run: aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$AWS_REGION"
+
+      # Deletes the Ingress objects directly (rather than relying on ArgoCD's
+      # own app-deletion/prune ordering) for the most direct control over
+      # the one sequencing step that actually matters: the ALB the
+      # controller created is NOT Terraform-managed, so if `terraform
+      # destroy` runs against the VPC while it still exists, the destroy
+      # either fails outright or - worse - partially succeeds and leaves an
+      # orphaned ALB silently billing forever with nothing left to tear it
+      # down.
+      - name: Delete Ingress objects (triggers ALB deletion)
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          kubectl delete ingress demo-site -n default --ignore-not-found --timeout=60s
+          kubectl delete ingress argocd-server -n argocd --ignore-not-found --timeout=60s
+
+      - name: Wait for the ALB to actually be gone
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          for i in $(seq 1 30); do
+            REMAINING=$(aws resourcegroupstaggingapi get-resources \
+              --resource-type-filters elasticloadbalancing:loadbalancer \
+              --tag-filters "Key=elbv2.k8s.aws/cluster,Values=$CLUSTER_NAME" \
+              --query 'length(ResourceTagMappingList)' --output text)
+            if [ "$REMAINING" = "0" ]; then
+              echo "ALB deleted."
+              exit 0
+            fi
+            echo "ALB still present ($REMAINING)... ($i/30)"
+            sleep 10
+          done
+          echo "::error::ALB for $CLUSTER_NAME was not deleted after 5 minutes - refusing to run terraform destroy against the VPC while it may still be referenced. Investigate and clean up manually before re-running."
+          exit 1
+
+      - name: Uninstall Helm releases
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          helm uninstall argocd -n argocd || true
+          helm uninstall aws-load-balancer-controller -n kube-system || true
+
+      - name: Remove DNS records
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          ZONE_ID=Z090356212OBKYAPYDLK1
+          for HOST in "$DEMO_HOST" "$ARGOCD_HOST"; do
+            CURRENT_VALUE=$(aws route53 list-resource-record-sets --hosted-zone-id "$ZONE_ID" \
+              --query "ResourceRecordSets[?Name=='${HOST}.' && Type=='CNAME'].ResourceRecords[0].Value" \
+              --output text)
+            if [ -n "$CURRENT_VALUE" ] && [ "$CURRENT_VALUE" != "None" ]; then
+              aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch "$(cat <<EOF
+          {
+            "Changes": [{
+              "Action": "DELETE",
+              "ResourceRecordSet": {
+                "Name": "$HOST",
+                "Type": "CNAME",
+                "TTL": 60,
+                "ResourceRecords": [{"Value": "$CURRENT_VALUE"}]
+              }
+            }]
+          }
+          EOF
+          )"
+            fi
+          done
+
+      - name: Terraform init
+        if: steps.check.outputs.exists == 'true'
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform destroy
+        if: steps.check.outputs.exists == 'true'
+        run: terraform destroy -auto-approve -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Record status=idle
+        if: success()
+        run: |
+          aws dynamodb put-item --table-name "$DYNAMODB_STATUS_TABLE" --item '{"id": {"S": "cluster"}, "status": {"S": "idle"}}'
+
+      - name: Record status=error on failure
+        if: failure()
+        run: |
+          aws dynamodb put-item --table-name "$DYNAMODB_STATUS_TABLE" --item "$(cat <<EOF
+          {
+            "id": {"S": "cluster"},
+            "status": {"S": "error"},
+            "workflow_run_id": {"S": "${{ github.run_id }}"}
+          }
+          EOF
+          )" || true
