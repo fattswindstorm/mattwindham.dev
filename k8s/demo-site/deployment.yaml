@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-site
+  namespace: default
+  labels:
+    app: demo-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-site
+  template:
+    metadata:
+      labels:
+        app: demo-site
+    spec:
+      containers:
+        - name: demo-site
+          # Tag is bot-committed by .github/workflows/build-demo-image.yml on
+          # every push to web/** - this placeholder only matters until the
+          # first real build runs.
+          image: ACCOUNT_ID_REDACTED.dkr.ecr.us-east-1.amazonaws.com/resume-site-demo:__IMAGE_TAG__
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
