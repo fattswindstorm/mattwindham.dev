@@ -253,22 +253,6 @@ const certifications = [
 		margin-bottom: 2.5rem;
 	}
 
-	@media print {
-		.btn-print {
-			display: none;
-		}
-
-		.pills li {
-			border-color: #999;
-			background: none;
-		}
-
-		.experience > li,
-		.certs li {
-			border-color: #ccc;
-		}
-	}
-
 	.experience {
 		list-style: none;
 		margin: 0;
@@ -377,6 +361,23 @@ const certifications = [
 	@media (max-width: 600px) {
 		.job-meta {
 			align-items: flex-start;
+		}
+	}
+
+	@media print {
+		.btn-print {
+			display: none;
+		}
+
+		.pills li {
+			border-color: #999;
+			background: none;
+			color: #000;
+		}
+
+		.experience > li,
+		.certs li {
+			border-color: #ccc;
 		}
 	}
 </style>
