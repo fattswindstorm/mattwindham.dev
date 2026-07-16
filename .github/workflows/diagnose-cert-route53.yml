@@ -1,0 +1,58 @@
+name: Diagnose Cert Route53 (temporary)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
+  TF_WORKING_DIR: terraform/site
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: State list (cert-related resources)
+        run: terraform state list | grep -i -E 'cert|acm' || echo "(no matches)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: State show - cert_validation apex record
+        run: terraform state show 'aws_route53_record.cert_validation["mattwindham.dev"]' || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+
+      - name: State show - cert_validation www record
+        run: terraform state show 'aws_route53_record.cert_validation["www.mattwindham.dev"]' || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+
+      - name: State show - ACM certificate
+        run: terraform state show aws_acm_certificate.site || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+
+      - name: List actual Route53 records for the validation CNAME
+        run: |
+          aws route53 list-resource-record-sets --hosted-zone-id Z090356212OBKYAPYDLK1 \
+            --query "ResourceRecordSets[?Type=='CNAME']" --output table
+
+      - name: Terraform plan (no apply)
+        run: terraform plan -no-color -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
