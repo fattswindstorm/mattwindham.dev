@@ -133,6 +133,17 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
+    sid    = "CloudFrontCachePolicyManagement"
+    effect = "Allow"
+    actions = [
+      "cloudfront:CreateCachePolicy",
+      "cloudfront:UpdateCachePolicy",
+      "cloudfront:DeleteCachePolicy",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid       = "STSIdentity"
     effect    = "Allow"
     actions   = ["sts:GetCallerIdentity"]
@@ -283,6 +294,74 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-opportunity*"]
   }
 
+  # The three statements below were missing before this fix - pre-existing
+  # gaps unrelated to the eks-demo PR (resume-site-correspondence,
+  # resume-site-settings) as well as the eks-demo-introduced
+  # resume-site-cluster-control. Same actions/shape as the two statements
+  # above, just a different name-prefix scope per Lambda role.
+  statement {
+    sid    = "IAMRoleManagementForCorrespondenceLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-correspondence*"]
+  }
+
+  statement {
+    sid    = "IAMRoleManagementForSettingsLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-settings*"]
+  }
+
+  statement {
+    sid    = "IAMRoleManagementForClusterControlLambda"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-cluster-control*"]
+  }
+
   statement {
     sid    = "DynamoDBManagement"
     effect = "Allow"
@@ -297,7 +376,15 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "dynamodb:DescribeContinuousBackups",
       "dynamodb:DescribeTimeToLive",
     ]
-    resources = ["arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-opportunities"]
+    resources = [
+      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-opportunities",
+      # Both were missing before this fix, unrelated to the eks-demo PR -
+      # settings.tf (merged in #48) and correspondence.tf's messages table
+      # never actually provisioned successfully in AWS because of this gap.
+      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-user-settings",
+      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-messages",
+      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-eks-demo-status",
+    ]
   }
 
   statement {
@@ -315,10 +402,41 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
+    sid    = "SecretsManagerManagement"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:CreateSecret",
+      "secretsmanager:DeleteSecret",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:PutSecretValue",
+      "secretsmanager:TagResource",
+      "secretsmanager:UntagResource",
+    ]
+    # Secrets Manager appends a random 6-char suffix to the ARN at creation
+    # time, so the exact ARN can't be known ahead of apply - name-prefix
+    # wildcard is the standard way to scope this.
+    resources = ["arn:aws:secretsmanager:us-east-1:ACCOUNT_ID_REDACTED:secret:resume-site/github-dispatch-token-*"]
+  }
+
+  statement {
+    sid    = "EcrRepositoryCreate"
+    effect = "Allow"
+    actions = [
+      # Unlike most ECR actions, CreateRepository doesn't support
+      # resource-level scoping by the not-yet-existing repo's ARN (confirmed
+      # by a real AccessDenied against the exact scoped ARN below) - needs
+      # "*", matching the same acceptance already made elsewhere in this
+      # policy for other create-heavy actions (CloudFrontManagement, etc).
+      "ecr:CreateRepository",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "EcrRepositoryManagement"
     effect = "Allow"
     actions = [
-      "ecr:CreateRepository",
       "ecr:DeleteRepository",
       "ecr:DescribeRepositories",
       "ecr:PutLifecyclePolicy",
