@@ -141,9 +141,9 @@ jobs:
             done
           done
 
-      - name: RDS instances - every enabled region
+      - name: RDS instances - every region including opt-in
         run: |
-          for REGION in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do
+          for REGION in $(aws ec2 describe-regions --all-regions --query 'Regions[].RegionName' --output text); do
             COUNT=$(aws rds describe-db-instances --region "$REGION" --query 'length(DBInstances)' --output text 2>/dev/null || echo "ERR")
             if [ "$COUNT" != "0" ] && [ "$COUNT" != "ERR" ]; then
               echo "=== $REGION: $COUNT instance(s) ==="
@@ -154,22 +154,42 @@ jobs:
           done
           echo "(regions with 0 instances or access errors are omitted above)"
 
-      - name: CloudTrail - all activity by terraform-deployer, last 3 days
+      - name: RDS snapshots (instance + cluster, manual + automated) - every region including opt-in
+        run: |
+          for REGION in $(aws ec2 describe-regions --all-regions --query 'Regions[].RegionName' --output text); do
+            SNAP_COUNT=$(aws rds describe-db-snapshots --region "$REGION" --query 'length(DBSnapshots)' --output text 2>/dev/null || echo "ERR")
+            if [ "$SNAP_COUNT" != "0" ] && [ "$SNAP_COUNT" != "ERR" ]; then
+              echo "=== $REGION: $SNAP_COUNT DB snapshot(s) ==="
+              aws rds describe-db-snapshots --region "$REGION" \
+                --query 'DBSnapshots[].{Id:DBSnapshotIdentifier,SourceDB:DBInstanceIdentifier,Storage:AllocatedStorage,Created:SnapshotCreateTime,Type:SnapshotType}' \
+                --output table
+            fi
+            CLUSTER_SNAP_COUNT=$(aws rds describe-db-cluster-snapshots --region "$REGION" --query 'length(DBClusterSnapshots)' --output text 2>/dev/null || echo "ERR")
+            if [ "$CLUSTER_SNAP_COUNT" != "0" ] && [ "$CLUSTER_SNAP_COUNT" != "ERR" ]; then
+              echo "=== $REGION: $CLUSTER_SNAP_COUNT cluster snapshot(s) ==="
+              aws rds describe-db-cluster-snapshots --region "$REGION" \
+                --query 'DBClusterSnapshots[].{Id:DBClusterSnapshotIdentifier,SourceCluster:DBClusterIdentifier,Storage:AllocatedStorage,Created:SnapshotCreateTime,Type:SnapshotType}' \
+                --output table
+            fi
+          done
+          echo "(regions with 0 snapshots or access errors are omitted above)"
+
+      - name: CloudTrail - all activity by terraform-deployer, last 90 days (max lookback)
         run: |
           aws cloudtrail lookup-events \
             --lookup-attributes AttributeKey=Username,AttributeValue=terraform-deployer \
-            --start-time "$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-3d +%Y-%m-%dT%H:%M:%S)" \
-            --max-results 200 \
+            --start-time "$(date -u -d '90 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-90d +%Y-%m-%dT%H:%M:%S)" \
+            --max-results 500 \
             --query 'Events[].{Time:EventTime,Name:EventName,Source:EventSource}' \
             --output table || echo "(CloudTrail lookup unavailable or empty)"
 
-      - name: CloudTrail - all RDS create/write events, last 3 days
+      - name: CloudTrail - all RDS create/write/delete events, last 90 days (max lookback)
         run: |
           aws cloudtrail lookup-events \
             --lookup-attributes AttributeKey=EventSource,AttributeValue=rds.amazonaws.com \
-            --start-time "$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-3d +%Y-%m-%dT%H:%M:%S)" \
-            --max-results 200 \
-            --query 'Events[].{Time:EventTime,Name:EventName,User:Username}' \
+            --start-time "$(date -u -d '90 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-90d +%Y-%m-%dT%H:%M:%S)" \
+            --max-results 500 \
+            --query "Events[?Name!='DescribeDBInstances' && Name!='DescribeDBClusters' && Name!='DescribeDBSnapshots' && Name!='DescribeDBClusterSnapshots' && Name!='DescribeEvents' && Name!='DescribeDBRecommendations' && Name!='DescribeDBSubnetGroups' && Name!='DescribeDBSecurityGroups' && Name!='DescribeDBEngineVersions' && Name!='DescribeAccountAttributes' && Name!='DescribeTenantDatabases' && Name!='DescribePendingMaintenanceActions' && Name!='DescribeBlueGreenDeployments' && Name!='DescribeGlobalClusters' && Name!='DescribeDBClusterParameterGroups'].{Time:EventTime,Name:EventName,User:Username}" \
             --output table || echo "(CloudTrail lookup unavailable or empty)"
 
       - name: Recent CloudTrail S3 write events (last 3 days, non-root focus)
