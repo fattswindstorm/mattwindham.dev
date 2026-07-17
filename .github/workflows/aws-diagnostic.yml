@@ -1,0 +1,45 @@
+name: AWS Diagnostic
+
+# General-purpose read-only AWS CLI runner for account investigations
+# (billing, IAM audits, CloudTrail, etc.). Assumes claude-readonly, which
+# can only read - the workflow doesn't need to police what command runs
+# since the IAM role itself can't do anything destructive.
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'AWS CLI args, without the leading "aws" (e.g. "s3api list-buckets --output table")'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/claude-readonly
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run command
+        env:
+          # Passed via env var rather than interpolated directly into the
+          # run: body - GitHub's ${{ }} templating splices raw text into
+          # the script source before bash parses it, which would let a
+          # malicious input inject separate shell commands. Referencing it
+          # as $COMMAND instead means bash only ever word-splits the value
+          # (needed so multi-arg commands like "s3api list-buckets
+          # --output table" work) - embedded ;, &&, $() etc. inside an
+          # already-expanded variable are not re-parsed as shell control
+          # operators, so this can't execute anything beyond the aws CLI
+          # call itself.
+          COMMAND: ${{ inputs.command }}
+        run: aws $COMMAND
