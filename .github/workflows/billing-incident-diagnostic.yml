@@ -1,0 +1,102 @@
+name: Billing Incident Diagnostic (temporary)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Account identity
+        run: aws sts get-caller-identity
+
+      - name: Cost and usage - month to date, by service
+        run: |
+          START=$(date -u +%Y-%m-01)
+          END=$(date -u +%Y-%m-%d)
+          aws ce get-cost-and-usage \
+            --time-period Start=$START,End=$END \
+            --granularity MONTHLY \
+            --metrics "UnblendedCost" "UsageQuantity" \
+            --group-by Type=DIMENSION,Key=SERVICE \
+            --output table
+
+      - name: Cost and usage - month to date, S3 by usage type
+        run: |
+          START=$(date -u +%Y-%m-01)
+          END=$(date -u +%Y-%m-%d)
+          aws ce get-cost-and-usage \
+            --time-period Start=$START,End=$END \
+            --granularity MONTHLY \
+            --metrics "UnblendedCost" "UsageQuantity" \
+            --group-by Type=DIMENSION,Key=USAGE_TYPE \
+            --filter '{"Dimensions": {"Key": "SERVICE", "Values": ["Amazon Simple Storage Service"]}}' \
+            --output table
+
+      - name: Cost forecast - rest of month
+        run: |
+          START=$(date -u +%Y-%m-%d)
+          END=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +%Y-%m-%d 2>/dev/null || date -u -v+1m -v1d +%Y-%m-%d)
+          aws ce get-cost-forecast \
+            --time-period Start=$START,End=$END \
+            --metric UNBLENDED_COST \
+            --granularity MONTHLY \
+            --output table || echo "(forecast unavailable - often the case with <1 full day of history for a new cost pattern)"
+
+      - name: Anomaly detection - any active cost anomalies
+        run: aws ce get-anomalies --date-interval StartDate=$(date -u -d '14 days ago' +%Y-%m-%d 2>/dev/null || date -u -v-14d +%Y-%m-%d),EndDate=$(date -u +%Y-%m-%d) --output table || echo "(no anomaly monitor configured, or none found)"
+
+      - name: All S3 buckets in this account (not just Terraform-managed ones)
+        run: aws s3api list-buckets --query 'Buckets[].Name' --output table
+
+      - name: S3 bucket sizes (CloudWatch, last 2 days)
+        run: |
+          for BUCKET in $(aws s3api list-buckets --query 'Buckets[].Name' --output text); do
+            echo "=== $BUCKET ==="
+            REGION=$(aws s3api get-bucket-location --bucket "$BUCKET" --query 'LocationConstraint' --output text)
+            [ "$REGION" = "None" ] && REGION=us-east-1
+            aws cloudwatch get-metric-statistics \
+              --namespace AWS/S3 \
+              --metric-name BucketSizeBytes \
+              --dimensions Name=BucketName,Value="$BUCKET" Name=StorageType,Value=StandardStorage \
+              --start-time "$(date -u -d '2 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-2d +%Y-%m-%dT%H:%M:%S)" \
+              --end-time "$(date -u +%Y-%m-%dT%H:%M:%S)" \
+              --period 86400 \
+              --statistics Average \
+              --region "$REGION" \
+              --output table 2>&1 || echo "(no data / access issue for $BUCKET)"
+          done
+
+      - name: IAM users and their access keys (looking for anything unrecognized)
+        run: |
+          aws iam list-users --output table
+          echo "--- access keys per user ---"
+          for USER in $(aws iam list-users --query 'Users[].UserName' --output text); do
+            echo "=== $USER ==="
+            aws iam list-access-keys --user-name "$USER" --output table
+          done
+
+      - name: IAM roles (looking for anything unrecognized)
+        run: aws iam list-roles --query 'Roles[].{Name:RoleName,Created:CreateDate}' --output table
+
+      - name: Recent CloudTrail S3 write events (last 48h, best-effort)
+        run: |
+          aws cloudtrail lookup-events \
+            --lookup-attributes AttributeKey=EventSource,AttributeValue=s3.amazonaws.com \
+            --start-time "$(date -u -d '2 days ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-2d +%Y-%m-%dT%H:%M:%S)" \
+            --max-results 50 \
+            --query 'Events[].{Time:EventTime,Name:EventName,User:Username}' \
+            --output table || echo "(CloudTrail lookup unavailable or empty)"
