@@ -1,0 +1,74 @@
+name: Import CloudFront Distribution and DNS Records (temporary)
+
+# The two remaining resources whose "will be created" status is genuinely
+# dangerous rather than just a missing feature - the live CloudFront
+# distribution and the actual domain-resolution A/alias records. Creating
+# duplicates of either would conflict with (or worse, disrupt) what's
+# currently serving real traffic. Delete this workflow once done.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: terraform/site
+  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: REDACTED_EMAIL
+  TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Import distribution and DNS
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          failed=0
+
+          run_import() {
+            addr="$1"
+            id="$2"
+            echo "=== importing $addr ==="
+            if terraform import "$addr" "$id"; then
+              echo "--- OK: $addr ---"
+            else
+              echo "--- FAILED: $addr ---"
+              failed=$((failed + 1))
+            fi
+            echo
+          }
+
+          run_import aws_cloudfront_distribution.site E13N9KYMX8E99L
+          run_import aws_route53_record.apex Z090356212OBKYAPYDLK1_mattwindham.dev_A
+          run_import aws_route53_record.www Z090356212OBKYAPYDLK1_www.mattwindham.dev_A
+
+          echo "============================================"
+          if [ "$failed" -eq 0 ]; then
+            echo "All imports succeeded."
+          else
+            echo "$failed import(s) failed - see above."
+          fi
+
+      - name: Terraform plan (see what's left)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color -input=false
