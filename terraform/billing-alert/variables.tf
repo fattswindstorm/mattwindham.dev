@@ -13,5 +13,4 @@ variable "monthly_budget_limit" {
 variable "billing_alert_email" {
   description = "Email address to notify when the budget threshold is crossed"
   type        = string
-  default     = "REDACTED_EMAIL"
 }

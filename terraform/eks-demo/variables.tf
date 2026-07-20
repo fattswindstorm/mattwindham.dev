@@ -55,5 +55,4 @@ variable "node_max_size" {
 variable "billing_alert_email" {
   description = "Email address to notify when the eks-demo budget threshold is crossed"
   type        = string
-  default     = "REDACTED_EMAIL"
 }
