@@ -72,7 +72,7 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "cluster" {
   name        = "${var.cluster_name}-cluster"
-  description = "EKS control plane <-> node communication"
+  description = "EKS control plane to node communication"
   vpc_id      = aws_vpc.this.id
 
   tags = {
