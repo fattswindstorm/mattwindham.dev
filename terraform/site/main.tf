@@ -105,8 +105,14 @@ resource "aws_acm_certificate" "site" {
 }
 
 resource "aws_route53_record" "cert_validation" {
+  # Keyed by the validation record's own name, not the SAN's domain_name - an
+  # apex and its wildcard (e.g. mattwindham.dev and *.mattwindham.dev) get
+  # issued the identical validation CNAME, so keying by domain_name creates
+  # two Terraform resources fighting over one real DNS record. Keying by
+  # resource_record_name lets identical validation records collapse into a
+  # single managed resource, matching what ACM actually issued.
   for_each = {
-    for dvo in aws_acm_certificate.site.domain_validation_options : dvo.domain_name => {
+    for dvo in aws_acm_certificate.site.domain_validation_options : dvo.resource_record_name => {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
