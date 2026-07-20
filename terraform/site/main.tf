@@ -113,6 +113,10 @@ resource "aws_route53_record" "cert_validation" {
   # is built - keying directly by resource_record_name would instead error
   # at plan time ("Duplicate object key"), since a single for-expression map
   # can't tolerate two source elements producing the same key.
+  # trimsuffix on the map key only - resource_record_name is FQDN-form with a
+  # trailing dot, but Route53's own name attribute normalizes it away, and the
+  # state was moved to dot-free keys. Keeping the dot in the key here would
+  # mismatch existing state and show as a spurious destroy+recreate.
   for_each = {
     for r in distinct([
       for dvo in aws_acm_certificate.site.domain_validation_options : {
@@ -120,7 +124,7 @@ resource "aws_route53_record" "cert_validation" {
         record = dvo.resource_record_value
         type   = dvo.resource_record_type
       }
-    ]) : r.name => r
+    ]) : trimsuffix(r.name, ".") => r
   }
 
   zone_id = data.aws_route53_zone.primary.zone_id
