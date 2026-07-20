@@ -1,9 +1,8 @@
 name: Plan Site Drift Fix (temporary)
 
-# Step 1 of 2 - shows exactly what the real apply would do, with
-# aws_cognito_user_pool_client.portal excluded (see apply-site-drift-fix.yml
-# for why). Review this output fully before dispatching the apply workflow.
-# Delete both workflows once applied and confirmed clean.
+# Step 1 of 2 - shows exactly what the real apply would do. Review this
+# output fully before dispatching the apply workflow. Delete both workflows
+# once applied and confirmed clean.
 on:
   workflow_dispatch:
 
@@ -39,6 +38,6 @@ jobs:
         run: terraform init -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform plan (excluding the Cognito client)
-        run: terraform plan -no-color -input=false -exclude=aws_cognito_user_pool_client.portal
+      - name: Terraform plan
+        run: terraform plan -no-color -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}

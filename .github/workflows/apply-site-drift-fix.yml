@@ -1,12 +1,10 @@
 name: Apply Site Drift Fix (temporary)
 
 # Step 2 of 2 - only dispatch this after reviewing the full output of
-# plan-site-drift-fix.yml. Excludes aws_cognito_user_pool_client.portal - a
-# Terraform import artifact (generate_secret can't be read back via the
-# API, so import can't populate it correctly) that would otherwise
-# force-replace the live auth client, generating a new client ID and
-# breaking every current session, for no actual reason (the real value
-# already matches config). Delete both workflows once applied and
+# plan-site-drift-fix.yml. The aws_cognito_user_pool_client.portal
+# force-replace issue is fixed via a lifecycle.ignore_changes block in
+# auth.tf rather than a CLI flag - -exclude turned out to not be a real
+# terraform plan/apply flag. Delete both workflows once applied and
 # confirmed clean - terraform.yml's normal push-to-main flow resumes after
 # this.
 on:
@@ -44,10 +42,10 @@ jobs:
         run: terraform init -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform apply (excluding the Cognito client)
-        run: terraform apply -auto-approve -input=false -exclude=aws_cognito_user_pool_client.portal
+      - name: Terraform apply
+        run: terraform apply -auto-approve -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform plan (confirm only the excluded resource remains)
+      - name: Terraform plan (confirm nothing is left)
         run: terraform plan -no-color -input=false
         working-directory: ${{ env.TF_WORKING_DIR }}
