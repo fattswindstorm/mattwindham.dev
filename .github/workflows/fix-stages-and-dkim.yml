@@ -1,0 +1,93 @@
+name: Fix Stage Mispointing and DKIM Swap (temporary)
+
+# aws_apigatewayv2_stage.{correspondence,opportunity,log_viewer} are
+# tracked pointing at the orphaned APIs (api_id is ForceNew, so this shows
+# as "must be replaced"). $default is a singleton per API - the live APIs
+# already have their own real, currently-serving $default stage, so a
+# blind destroy+create risks a create-conflict rather than just being
+# wasteful like the cluster_control-related replacements are. Same state
+# rm + reimport pattern as the APIs themselves.
+#
+# Also finally fixes the ses_dkim[1]/[2] index swap flagged when the first
+# import batch ran, never circled back to since the API Gateway discovery
+# took priority.
+#
+# Delete this workflow once done.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: terraform/site
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: windham.matt@gmail.com
+  TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Fix stages and DKIM records
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          failed=0
+
+          run_fix() {
+            desc="$1"
+            shift
+            echo "=== $desc ==="
+            if "$@"; then
+              echo "--- OK: $desc ---"
+            else
+              echo "--- FAILED: $desc ---"
+              failed=$((failed + 1))
+            fi
+            echo
+          }
+
+          run_fix "rm stage correspondence" terraform state rm aws_apigatewayv2_stage.correspondence
+          run_fix "import stage correspondence" terraform import aws_apigatewayv2_stage.correspondence 'snu28xy5kf/$default'
+
+          run_fix "rm stage opportunity" terraform state rm aws_apigatewayv2_stage.opportunity
+          run_fix "import stage opportunity" terraform import aws_apigatewayv2_stage.opportunity 'e2bniuc1dg/$default'
+
+          run_fix "rm stage log_viewer" terraform state rm aws_apigatewayv2_stage.log_viewer
+          run_fix "import stage log_viewer" terraform import aws_apigatewayv2_stage.log_viewer '16awjv81h6/$default'
+
+          run_fix "rm ses_dkim[1]" terraform state rm 'aws_route53_record.ses_dkim[1]'
+          run_fix "reimport ses_dkim[1] (swapped)" terraform import 'aws_route53_record.ses_dkim[1]' 'Z090356212OBKYAPYDLK1_imubhg5iphe3oop6i4u4fcyycnqnlfij._domainkey.mattwindham.dev._CNAME'
+
+          run_fix "rm ses_dkim[2]" terraform state rm 'aws_route53_record.ses_dkim[2]'
+          run_fix "reimport ses_dkim[2] (swapped)" terraform import 'aws_route53_record.ses_dkim[2]' 'Z090356212OBKYAPYDLK1_oqhs5wd5v6dxtgs7iaudfgkotmkxkluo._domainkey.mattwindham.dev._CNAME'
+
+          echo "============================================"
+          if [ "$failed" -eq 0 ]; then
+            echo "All fixes succeeded."
+          else
+            echo "$failed fix(es) failed - see above."
+          fi
+
+      - name: Terraform plan (see what's left)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color -input=false
