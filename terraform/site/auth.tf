@@ -99,6 +99,17 @@ resource "aws_cognito_user_pool_client" "portal" {
     id_token      = "hours"
     refresh_token = "days"
   }
+
+  # generate_secret is create-time-only and Cognito's own DescribeUserPoolClient
+  # doesn't return it, so terraform import can't populate it - without this,
+  # Terraform treats it as unknown and force-replaces this resource on every
+  # plan, which would generate a new client ID and log out every current
+  # session. Confirmed via `aws cognito-idp describe-user-pool-client` that
+  # the real client has no secret, matching generate_secret = false above -
+  # this is a known-good value, not an actual drift.
+  lifecycle {
+    ignore_changes = [generate_secret]
+  }
 }
 
 # Matt adds his own account to this group after registering through the
