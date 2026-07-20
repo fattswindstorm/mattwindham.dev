@@ -1,0 +1,42 @@
+name: Gather Remaining Drift IDs (temporary)
+
+# One-off, read-only lookup - gathers API Gateway sub-resource IDs and exact
+# Route53 record details needed for the next terraform/site import batch.
+# Delete once the drift cleanup is done.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/claude-readonly
+
+jobs:
+  gather:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Gather everything
+        run: |
+          echo "=== API Gateway APIs ==="
+          aws apigatewayv2 get-apis --query 'Items[].{Id:ApiId,Name:Name}' --output table
+
+          for API_ID in $(aws apigatewayv2 get-apis --query 'Items[].ApiId' --output text); do
+            NAME=$(aws apigatewayv2 get-apis --query "Items[?ApiId=='$API_ID'].Name" --output text)
+            echo "=== API $NAME ($API_ID) - authorizers ==="
+            aws apigatewayv2 get-authorizers --api-id "$API_ID" --query 'Items[].{Id:AuthorizerId,Name:Name}' --output table
+            echo "=== API $NAME ($API_ID) - integrations ==="
+            aws apigatewayv2 get-integrations --api-id "$API_ID" --query 'Items[].{Id:IntegrationId,Uri:IntegrationUri}' --output table
+            echo "=== API $NAME ($API_ID) - routes ==="
+            aws apigatewayv2 get-routes --api-id "$API_ID" --query 'Items[].{Id:RouteId,Key:RouteKey}' --output table
+          done
+
+          echo "=== All Route53 records in the zone ==="
+          aws route53 list-resource-record-sets --hosted-zone-id Z090356212OBKYAPYDLK1 --output json
