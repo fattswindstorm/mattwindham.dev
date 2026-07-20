@@ -1,0 +1,90 @@
+name: Import Site State Drift (temporary)
+
+# One-off state-repair workflow - imports resources that already exist in
+# AWS but aren't tracked in terraform/site's state (see PR history around
+# 2026-07-20 for the incident). Delete this file once the imports are
+# confirmed clean via a subsequent terraform plan.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: terraform/site
+  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: windham.matt@gmail.com
+  TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Import drifted resources
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          failed=0
+
+          run_import() {
+            addr="$1"
+            id="$2"
+            echo "=== importing $addr ==="
+            if terraform import "$addr" "$id"; then
+              echo "--- OK: $addr ---"
+            else
+              echo "--- FAILED: $addr ---"
+              failed=$((failed + 1))
+            fi
+            echo
+          }
+
+          run_import aws_dynamodb_table.messages site-messages
+          run_import aws_iam_role.correspondence resume-site-correspondence
+          run_import aws_s3_bucket.site resume-site-955752000541
+          run_import aws_cloudfront_origin_access_control.site E14U5B9MEAYYIT
+          run_import aws_cloudfront_function.rewrite_index resume-site-955752000541-rewrite-index
+          run_import 'aws_route53_record.cert_validation["mattwindham.dev"]' 'Z090356212OBKYAPYDLK1__c0c0ad710e9fcfe7d66770ef70e321dc.mattwindham.dev._CNAME'
+          run_import 'aws_route53_record.cert_validation["www.mattwindham.dev"]' 'Z090356212OBKYAPYDLK1__01692441bcf855e180005f545bbefc05.www.mattwindham.dev._CNAME'
+          run_import aws_s3_bucket.logs resume-site-logs-955752000541
+          run_import aws_iam_role.log_viewer resume-site-log-viewer
+          run_import aws_dynamodb_table.opportunities site-opportunities
+          run_import aws_route53_record.ses_verification 'Z090356212OBKYAPYDLK1__amazonses.mattwindham.dev._TXT'
+          run_import 'aws_route53_record.ses_dkim[0]' 'Z090356212OBKYAPYDLK1_5e7swnomv73za2wge7ee5qw4j7bw7clj._domainkey.mattwindham.dev._CNAME'
+          run_import 'aws_route53_record.ses_dkim[1]' 'Z090356212OBKYAPYDLK1_oqhs5wd5v6dxtgs7iaudfgkotmkxkluo._domainkey.mattwindham.dev._CNAME'
+          run_import 'aws_route53_record.ses_dkim[2]' 'Z090356212OBKYAPYDLK1_imubhg5iphe3oop6i4u4fcyycnqnlfij._domainkey.mattwindham.dev._CNAME'
+          run_import aws_iam_role.opportunity resume-site-opportunity
+          run_import aws_cognito_user_pool.recruiters us-east-1_TWMEuKgW5
+          run_import aws_cognito_user_pool_domain.recruiters mattwindham-auth
+          run_import aws_cognito_identity_provider.google us-east-1_TWMEuKgW5:Google
+          run_import aws_cognito_user_pool_client.portal us-east-1_TWMEuKgW5/7q9ommophg8lj4kkc6r3oqorj0
+          run_import aws_cognito_user_group.admins us-east-1_TWMEuKgW5/admins
+
+          echo "============================================"
+          if [ "$failed" -eq 0 ]; then
+            echo "All imports succeeded."
+          else
+            echo "$failed import(s) failed - see above for which ones."
+          fi
+
+      - name: Terraform plan (see what's left, if anything)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color -input=false
