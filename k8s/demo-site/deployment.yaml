@@ -20,7 +20,7 @@ spec:
           # Tag is bot-committed by .github/workflows/build-demo-image.yml on
           # every push to web/** - this placeholder only matters until the
           # first real build runs.
-          image: ACCOUNT_ID_REDACTED.dkr.ecr.us-east-1.amazonaws.com/resume-site-demo:__IMAGE_TAG__
+          image: 955752000541.dkr.ecr.us-east-1.amazonaws.com/resume-site-demo:__IMAGE_TAG__
           ports:
             - containerPort: 8080
           resources:

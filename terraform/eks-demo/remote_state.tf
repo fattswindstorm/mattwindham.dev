@@ -6,7 +6,7 @@ data "terraform_remote_state" "site" {
   backend = "s3"
 
   config = {
-    bucket = "resume-site-tfstate-ACCOUNT_ID_REDACTED"
+    bucket = "resume-site-tfstate-955752000541"
     key    = "site/terraform.tfstate"
     region = "us-east-1"
   }
