@@ -41,6 +41,15 @@ resource "aws_cognito_user_pool" "recruiters" {
       priority = 1
     }
   }
+
+  # schema is immutable after pool creation - AWS rejects any update to it
+  # outright ("cannot modify or remove schema items"), even when the diff is
+  # cosmetic (e.g. import not populating string_attribute_constraints).
+  # Confirmed via `aws cognito-idp describe-user-pool` that the live email/name
+  # attributes match what's declared above - not actual drift.
+  lifecycle {
+    ignore_changes = [schema]
+  }
 }
 
 # AWS-provided Hosted UI domain - just a redirect waypoint for the Google
