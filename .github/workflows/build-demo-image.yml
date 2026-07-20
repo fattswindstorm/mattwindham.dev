@@ -16,7 +16,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/github-actions-resume-site
+  AWS_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-resume-site
   ECR_REPOSITORY: resume-site-demo
 
 jobs:

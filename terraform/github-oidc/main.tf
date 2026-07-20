@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "tls_certificate" "github_actions" {
   url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
 }
@@ -52,8 +54,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "s3:ListBucket",
     ]
     resources = [
-      "arn:aws:s3:::resume-site-tfstate-ACCOUNT_ID_REDACTED",
-      "arn:aws:s3:::resume-site-tfstate-ACCOUNT_ID_REDACTED/*",
+      "arn:aws:s3:::resume-site-tfstate-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::resume-site-tfstate-${data.aws_caller_identity.current.account_id}/*",
     ]
   }
 
@@ -91,8 +93,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "s3:DeleteObject",
     ]
     resources = [
-      "arn:aws:s3:::resume-site-ACCOUNT_ID_REDACTED",
-      "arn:aws:s3:::resume-site-ACCOUNT_ID_REDACTED/*",
+      "arn:aws:s3:::resume-site-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::resume-site-${data.aws_caller_identity.current.account_id}/*",
     ]
   }
 
@@ -222,8 +224,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "s3:DeleteObject",
     ]
     resources = [
-      "arn:aws:s3:::resume-site-logs-ACCOUNT_ID_REDACTED",
-      "arn:aws:s3:::resume-site-logs-ACCOUNT_ID_REDACTED/*",
+      "arn:aws:s3:::resume-site-logs-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::resume-site-logs-${data.aws_caller_identity.current.account_id}/*",
     ]
   }
 
@@ -270,7 +272,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:UntagRole",
       "iam:PassRole",
     ]
-    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-log-viewer*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/resume-site-log-viewer*"]
   }
 
   statement {
@@ -291,7 +293,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:UntagRole",
       "iam:PassRole",
     ]
-    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-opportunity*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/resume-site-opportunity*"]
   }
 
   # The three statements below were missing before this fix - pre-existing
@@ -317,7 +319,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:UntagRole",
       "iam:PassRole",
     ]
-    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-correspondence*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/resume-site-correspondence*"]
   }
 
   statement {
@@ -338,7 +340,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:UntagRole",
       "iam:PassRole",
     ]
-    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-settings*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/resume-site-settings*"]
   }
 
   statement {
@@ -359,7 +361,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:UntagRole",
       "iam:PassRole",
     ]
-    resources = ["arn:aws:iam::ACCOUNT_ID_REDACTED:role/resume-site-cluster-control*"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/resume-site-cluster-control*"]
   }
 
   statement {
@@ -377,13 +379,13 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "dynamodb:DescribeTimeToLive",
     ]
     resources = [
-      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-opportunities",
+      "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/site-opportunities",
       # Both were missing before this fix, unrelated to the eks-demo PR -
       # settings.tf (merged in #48) and correspondence.tf's messages table
       # never actually provisioned successfully in AWS because of this gap.
-      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-user-settings",
-      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-messages",
-      "arn:aws:dynamodb:us-east-1:ACCOUNT_ID_REDACTED:table/site-eks-demo-status",
+      "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/site-user-settings",
+      "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/site-messages",
+      "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/site-eks-demo-status",
     ]
   }
 
@@ -416,7 +418,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     # Secrets Manager appends a random 6-char suffix to the ARN at creation
     # time, so the exact ARN can't be known ahead of apply - name-prefix
     # wildcard is the standard way to scope this.
-    resources = ["arn:aws:secretsmanager:us-east-1:ACCOUNT_ID_REDACTED:secret:resume-site/github-dispatch-token-*"]
+    resources = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:resume-site/github-dispatch-token-*"]
   }
 
   statement {
@@ -448,7 +450,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:UntagResource",
       "ecr:ListTagsForResource",
     ]
-    resources = ["arn:aws:ecr:us-east-1:ACCOUNT_ID_REDACTED:repository/resume-site-demo"]
+    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo"]
   }
 
   statement {
@@ -472,7 +474,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:BatchGetImage",
       "ecr:GetDownloadUrlForLayer",
     ]
-    resources = ["arn:aws:ecr:us-east-1:ACCOUNT_ID_REDACTED:repository/resume-site-demo"]
+    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo"]
   }
 
   statement {

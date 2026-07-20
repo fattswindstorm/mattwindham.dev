@@ -2,6 +2,8 @@
 # EKS cluster + node IAM roles
 # ---------------------------------------------------------------
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "eks_cluster_trust" {
   statement {
     effect  = "Allow"
@@ -107,8 +109,8 @@ data "aws_iam_policy_document" "eks_demo_lifecycle_permissions" {
       "s3:ListBucket",
     ]
     resources = [
-      "arn:aws:s3:::resume-site-tfstate-ACCOUNT_ID_REDACTED",
-      "arn:aws:s3:::resume-site-tfstate-ACCOUNT_ID_REDACTED/*",
+      "arn:aws:s3:::resume-site-tfstate-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::resume-site-tfstate-${data.aws_caller_identity.current.account_id}/*",
     ]
   }
 
@@ -119,7 +121,7 @@ data "aws_iam_policy_document" "eks_demo_lifecycle_permissions" {
       "s3:GetObject",
     ]
     resources = [
-      "arn:aws:s3:::resume-site-tfstate-ACCOUNT_ID_REDACTED/site/terraform.tfstate",
+      "arn:aws:s3:::resume-site-tfstate-${data.aws_caller_identity.current.account_id}/site/terraform.tfstate",
     ]
   }
 
@@ -149,9 +151,9 @@ data "aws_iam_policy_document" "eks_demo_lifecycle_permissions" {
       "eks:AccessKubernetesApi",
     ]
     resources = [
-      "arn:aws:eks:${var.aws_region}:ACCOUNT_ID_REDACTED:cluster/${var.cluster_name}",
-      "arn:aws:eks:${var.aws_region}:ACCOUNT_ID_REDACTED:nodegroup/${var.cluster_name}/*/*",
-      "arn:aws:eks:${var.aws_region}:ACCOUNT_ID_REDACTED:access-entry/${var.cluster_name}/*/*/*",
+      "arn:aws:eks:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.cluster_name}",
+      "arn:aws:eks:${var.aws_region}:${data.aws_caller_identity.current.account_id}:nodegroup/${var.cluster_name}/*/*",
+      "arn:aws:eks:${var.aws_region}:${data.aws_caller_identity.current.account_id}:access-entry/${var.cluster_name}/*/*/*",
     ]
   }
 
@@ -237,8 +239,8 @@ data "aws_iam_policy_document" "eks_demo_lifecycle_permissions" {
       "iam:TagOpenIDConnectProvider",
     ]
     resources = [
-      "arn:aws:iam::ACCOUNT_ID_REDACTED:role/${var.cluster_name}-*",
-      "arn:aws:iam::ACCOUNT_ID_REDACTED:oidc-provider/*",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.cluster_name}-*",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/*",
     ]
   }
 
@@ -325,7 +327,7 @@ data "aws_iam_policy_document" "eks_demo_lifecycle_permissions" {
     # cluster_control.tf) - referenced by its stable, known ARN rather than
     # a remote-state read, since only the ARN (not any other site-stack
     # detail) is needed here.
-    resources = ["arn:aws:dynamodb:${var.aws_region}:ACCOUNT_ID_REDACTED:table/site-eks-demo-status"]
+    resources = ["arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/site-eks-demo-status"]
   }
 }
 
