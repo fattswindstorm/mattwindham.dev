@@ -1,0 +1,57 @@
+name: Check API Gateway State (temporary)
+
+# One-off - shows exactly what aws_apigatewayv2_api.* currently point to in
+# state, before importing more sub-resources onto them. Delete when done.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: terraform/site
+  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: REDACTED_EMAIL
+  TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: State list (apigatewayv2 resources)
+        run: terraform state list | grep apigatewayv2 || echo "(none tracked)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: State show - correspondence API
+        run: terraform state show aws_apigatewayv2_api.correspondence || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+
+      - name: State show - opportunity API
+        run: terraform state show aws_apigatewayv2_api.opportunity || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+
+      - name: State show - log_viewer API
+        run: terraform state show aws_apigatewayv2_api.log_viewer || echo "(not in state)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
