@@ -1,0 +1,98 @@
+name: Fix API Gateway State Mispointing (temporary)
+
+# One-off state repair - state currently points aws_apigatewayv2_api.
+# correspondence/opportunity at orphaned/dead API IDs instead of the ones
+# CloudFront actually routes to. Removes the wrong tracking (state rm does
+# not touch real AWS resources) and reimports everything under the correct,
+# live IDs, including sub-resources. Delete this workflow once done.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: terraform/site
+  AWS_ROLE_ARN: arn:aws:iam::ACCOUNT_ID_REDACTED:role/github-actions-resume-site
+  TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
+  TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
+  TF_VAR_notify_email: REDACTED_EMAIL
+  TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+  TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Remove mispointed API entries from state
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform state rm aws_apigatewayv2_api.correspondence || echo "(already not tracked)"
+          terraform state rm aws_apigatewayv2_api.opportunity || echo "(already not tracked)"
+
+      - name: Import the correct, live resources
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          failed=0
+
+          run_import() {
+            addr="$1"
+            id="$2"
+            echo "=== importing $addr ==="
+            if terraform import "$addr" "$id"; then
+              echo "--- OK: $addr ---"
+            else
+              echo "--- FAILED: $addr ---"
+              failed=$((failed + 1))
+            fi
+            echo
+          }
+
+          # Parent APIs, corrected to the live IDs
+          run_import aws_apigatewayv2_api.correspondence snu28xy5kf
+          run_import aws_apigatewayv2_api.opportunity e2bniuc1dg
+          run_import aws_apigatewayv2_api.log_viewer 16awjv81h6
+
+          # correspondence sub-resources
+          run_import aws_apigatewayv2_authorizer.correspondence_jwt snu28xy5kf/qmpuh4
+          run_import aws_apigatewayv2_integration.correspondence snu28xy5kf/7d96pbr
+          run_import aws_apigatewayv2_route.threads_list snu28xy5kf/hwntug2
+          run_import aws_apigatewayv2_route.thread_detail snu28xy5kf/ge31b4g
+          run_import aws_apigatewayv2_route.thread_reply snu28xy5kf/rd03w00
+
+          # opportunity sub-resources
+          run_import aws_apigatewayv2_authorizer.opportunity_jwt e2bniuc1dg/f79wc4
+          run_import aws_apigatewayv2_integration.opportunity e2bniuc1dg/ix3wnd2
+          run_import aws_apigatewayv2_route.opportunity_post e2bniuc1dg/mpk3vqp
+          run_import aws_apigatewayv2_route.opportunity_options e2bniuc1dg/yko7tki
+
+          # log_viewer sub-resources
+          run_import aws_apigatewayv2_integration.log_viewer 16awjv81h6/4b0jkih
+          run_import aws_apigatewayv2_route.log_viewer '16awjv81h6/$default'
+
+          echo "============================================"
+          if [ "$failed" -eq 0 ]; then
+            echo "All imports succeeded."
+          else
+            echo "$failed import(s) failed - see above."
+          fi
+
+      - name: Terraform plan (see what's left)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color -input=false
