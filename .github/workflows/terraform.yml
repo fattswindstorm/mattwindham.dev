@@ -18,10 +18,10 @@ permissions:
 env:
   AWS_REGION: us-east-1
   TF_WORKING_DIR: terraform/site
-  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-resume-site
+  AWS_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-resume-site
   TF_VAR_dashboard_username: ${{ secrets.DASHBOARD_USERNAME }}
   TF_VAR_dashboard_password: ${{ secrets.DASHBOARD_PASSWORD }}
-  TF_VAR_notify_email: windham.matt@gmail.com
+  TF_VAR_notify_email: ${{ vars.NOTIFY_EMAIL }}
   TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
   TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
   TF_VAR_github_dispatch_token: ${{ secrets.DISPATCH_TOKEN }}

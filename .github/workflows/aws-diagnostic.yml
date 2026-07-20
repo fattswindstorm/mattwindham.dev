@@ -18,7 +18,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/claude-readonly
+  AWS_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/claude-readonly
 
 jobs:
   run:

@@ -13,7 +13,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  AWS_ROLE_ARN: arn:aws:iam::955752000541:role/github-actions-eks-demo-lifecycle
+  AWS_ROLE_ARN: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-eks-demo-lifecycle
   TF_WORKING_DIR: terraform/eks-demo
   CLUSTER_NAME: eks-demo
   ALB_CONTROLLER_CHART_VERSION: "1.8.2"

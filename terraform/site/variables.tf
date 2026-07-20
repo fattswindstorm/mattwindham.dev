@@ -25,7 +25,6 @@ variable "dashboard_password" {
 variable "notify_email" {
   description = "Email address to notify when an opportunity form is submitted"
   type        = string
-  default     = "windham.matt@gmail.com"
 }
 
 variable "google_client_id" {
