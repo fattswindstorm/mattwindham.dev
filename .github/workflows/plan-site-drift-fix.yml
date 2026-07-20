@@ -19,7 +19,7 @@ env:
   TF_VAR_notify_email: windham.matt@gmail.com
   TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
   TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-  TF_VAR_github_dispatch_token: ${{ secrets.GITHUB_DISPATCH_TOKEN }}
+  TF_VAR_github_dispatch_token: ${{ secrets.DISPATCH_TOKEN }}
 
 jobs:
   plan:
