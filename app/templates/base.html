@@ -1,0 +1,153 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}" />
+	<link rel="stylesheet" href="{% static 'css/site.css' %}" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="description" content="{% block description %}DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation.{% endblock %}" />
+	<link rel="canonical" href="https://mattwindham.dev{{ request.path }}" />
+	<title>{% block title %}Matthew Windham{% endblock %}</title>
+
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://mattwindham.dev{{ request.path }}" />
+	<meta property="og:title" content="{% block og_title %}{{ self.title }}{% endblock %}" />
+	<meta property="og:description" content="{% block og_description %}{{ self.description }}{% endblock %}" />
+	<meta property="og:image" content="https://mattwindham.dev{% static 'img/avatar.jpg' %}" />
+
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="{{ self.og_title }}" />
+	<meta name="twitter:description" content="{{ self.og_description }}" />
+	<meta name="twitter:image" content="https://mattwindham.dev{% static 'img/avatar.jpg' %}" />
+	{% block extra_head %}{% endblock %}
+</head>
+<body>
+	<nav class="site-nav">
+		<div class="wrap nav-row">
+			<a class="brand" href="/">Matthew Windham</a>
+
+			<div class="nav-links">
+				<a href="/about" class="{% if request.path == '/about/' %}active{% endif %}">About</a>
+				<a href="/resume" class="{% if request.path == '/resume/' %}active{% endif %}">Resume</a>
+				<a href="/projects" class="{% if request.path == '/projects/' %}active{% endif %}">Projects</a>
+				<a href="/portal/opportunity" class="{% if request.path == '/portal/opportunity/' %}active{% endif %}">Recruiter</a>
+			</div>
+
+			<div class="account-wrap">
+				<button
+					type="button"
+					class="account-btn"
+					id="account-btn"
+					aria-label="Account menu"
+					aria-expanded="false"
+					aria-haspopup="true"
+				>
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+						<circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
+						<circle cx="10" cy="7.5" r="3" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M3.5 16.5c0-3 3-5 6.5-5s6.5 2 6.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+
+				<div class="account-dropdown" id="account-dropdown" hidden>
+					{% if user.is_authenticated %}
+						<p class="acct-name">{{ user.name|default:user.email }}</p>
+						<hr class="acct-divider" />
+						<a href="/portal/settings" class="acct-item">Settings</a>
+						{% if user.is_admin %}
+							<a href="/portal/admin" class="acct-item">Admin inbox</a>
+						{% endif %}
+						<form method="post" action="{% url 'account_logout' %}" class="acct-item-form">
+							{% csrf_token %}
+							<button type="submit" class="acct-item acct-signout">Sign out</button>
+						</form>
+					{% else %}
+						<a href="{% url 'account_login' %}" class="acct-action">Sign In</a>
+						<a href="{% url 'account_signup' %}" class="acct-secondary">Create an account</a>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	{% block content %}{% endblock %}
+
+	<footer class="wrap">
+		<p>Matthew Windham <span id="lab-dot" class="lab-dot" aria-hidden="true">·</span></p>
+	</footer>
+
+	<script>
+		const btn = document.getElementById("account-btn");
+		const dropdown = document.getElementById("account-dropdown");
+
+		function openDropdown() {
+			dropdown.hidden = false;
+			btn.setAttribute("aria-expanded", "true");
+		}
+
+		function closeDropdown() {
+			dropdown.hidden = true;
+			btn.setAttribute("aria-expanded", "false");
+		}
+
+		btn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			dropdown.hidden ? openDropdown() : closeDropdown();
+		});
+
+		document.addEventListener("click", (e) => {
+			if (!dropdown.hidden && !dropdown.contains(e.target)) closeDropdown();
+		});
+
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape") closeDropdown();
+		});
+
+		// The demo cluster easter egg: unchanged from the old site, still a
+		// plain fetch against the same public, CloudFront-cached endpoint -
+		// terraform/site/cluster_control.tf is untouched by this rewrite.
+		(async () => {
+			try {
+				const res = await fetch("/lab/status");
+				if (!res.ok) return;
+				const data = await res.json();
+				if (data.status !== "active" || !data.demo_url || !data.argocd_url) return;
+
+				const dot = document.getElementById("lab-dot");
+				if (!dot) return;
+
+				dot.classList.add("lab-dot--live");
+
+				const details = document.createElement("details");
+				details.className = "lab-live";
+				const summary = document.createElement("summary");
+				summary.setAttribute("aria-label", "Live demo available");
+				summary.appendChild(dot.cloneNode(true));
+				details.appendChild(summary);
+
+				const links = document.createElement("div");
+				links.className = "lab-live-links";
+				const demoLink = document.createElement("a");
+				demoLink.href = data.demo_url;
+				demoLink.target = "_blank";
+				demoLink.rel = "noopener";
+				demoLink.textContent = "demo";
+				const argocdLink = document.createElement("a");
+				argocdLink.href = data.argocd_url;
+				argocdLink.target = "_blank";
+				argocdLink.rel = "noopener";
+				argocdLink.textContent = "argocd";
+				links.appendChild(demoLink);
+				links.appendChild(argocdLink);
+				details.appendChild(links);
+
+				dot.replaceWith(details);
+			} catch {
+				// Silent - this is a footer easter egg, not a feature.
+			}
+		})();
+	</script>
+
+	{% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -50,3 +50,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.name or self.email
+
+    @property
+    def is_admin(self):
+        """Portal-level admin role - the "admins" Group, not is_staff/is_superuser
+        (which gate the Django admin site itself). Mirrors the existing
+        Cognito "admins" group check used to gate all-threads visibility
+        and the eks-demo lifecycle trigger."""
+        return self.groups.filter(name="admins").exists()

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}About - Matthew Windham{% endblock %}
+{% block description %}A little about Matthew Windham, DevOps engineer in Austin, Texas.{% endblock %}
+
+{% block content %}
+<main class="wrap">
+	<div class="about-head">
+		<img class="avatar" src="{% static 'img/avatar.jpg' %}" width="140" height="140" alt="Matthew Windham" />
+		<h1 class="page-h1">About</h1>
+	</div>
+
+	<section class="bio">
+		<p>
+			I was born in Fort Worth, Texas, but my family moved to western Montana when I was three —
+			so I claim Montana. We settled in Kalispell the summer before fourth grade, and that's
+			where I grew up. Western Montana has a way of getting into you: winters on the slopes
+			snowboarding, summers hiking, fly fishing, rafting, and boating, with golf mixed in
+			whenever the weather allowed. It's a hard place to leave, and an easy one to miss.
+		</p>
+		<p>
+			I went to the University of Montana and studied geology. Eventually I needed to actually
+			start a career, and an opportunity came up at Cummings Electrical to get into IT. Turned
+			out I liked it — and the deeper I got, the more it pulled me in. Systems, automation,
+			infrastructure: it clicked in a way geology never quite did. I've been building on it ever
+			since, moving from sysadmin to SRE to where I am now as a DevOps engineer.
+		</p>
+		<p>
+			I met my wife in Dallas, and we came down to Austin together to start our life here — dog
+			included. When I'm not at a screen you'll find me at Zilker Park, on a golf course, or
+			working through Austin's very long list of good restaurants. Texas wasn't exactly part of
+			the plan, but Austin has a way of keeping people.
+		</p>
+		<blockquote>
+			"If a human operator needs to touch your system during normal operations, you have a bug.
+			The definition of normal changes as your systems grow."
+			<cite>— Carla Geisser, Google SRE</cite>
+		</blockquote>
+	</section>
+</main>
+{% endblock %}

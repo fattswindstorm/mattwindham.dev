@@ -1,11 +1,12 @@
-from django.http import HttpResponse
 from django.urls import path
 
-
-def healthz(request):
-    return HttpResponse("ok")
-
+from . import views
 
 urlpatterns = [
-    path("healthz/", healthz, name="healthz"),
+    path("healthz/", views.healthz, name="healthz"),
+    path("", views.index, name="index"),
+    path("about/", views.about, name="about"),
+    path("resume/", views.resume, name="resume"),
+    path("resume-se/", views.resume_se, name="resume_se"),
+    path("projects/", views.projects, name="projects"),
 ]

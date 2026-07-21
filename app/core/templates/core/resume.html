@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} - Matthew Windham{% endblock %}
+{% block description %}Resume for Matthew Windham - DevOps / Site Reliability Engineer specializing in AWS, Terraform, and infrastructure automation.{% endblock %}
+
+{% block content %}
+<main class="wrap">
+	<div class="resume-header">
+		<h1>{{ heading }}</h1>
+		<span class="updated">Updated {% now "F Y" %}</span>
+		<button type="button" class="btn-print" id="print-btn">Print / Save as PDF</button>
+		{% if show_opportunity_cta %}
+			<a class="btn-opportunity" href="/portal/opportunity">Submit an Opportunity →</a>
+		{% endif %}
+	</div>
+
+	{% if summary %}<p class="summary">{{ summary }}</p>{% endif %}
+
+	<section>
+		<h2>Experience</h2>
+		<ol class="experience">
+			{% for job in experience %}
+				<li>
+					<div class="job-head">
+						<div>
+							<strong>{{ job.title }}</strong>
+							<span class="company">{{ job.company }}</span>
+						</div>
+						<div class="job-meta">
+							<span>{{ job.start }} - {{ job.end }}</span>
+							<span>{{ job.location }}</span>
+						</div>
+					</div>
+					{% if job.bullets %}
+						<ul>
+							{% for bullet in job.bullets %}<li>{{ bullet }}</li>{% endfor %}
+						</ul>
+					{% endif %}
+				</li>
+			{% endfor %}
+		</ol>
+	</section>
+
+	<section>
+		<h2>Skills</h2>
+		<div class="skills">
+			{% for group in skill_groups %}
+				<div>
+					<h3>{{ group.label }}</h3>
+					<ul class="pills">
+						{% for item in group.items %}<li>{{ item }}</li>{% endfor %}
+					</ul>
+				</div>
+			{% endfor %}
+		</div>
+	</section>
+
+	<section>
+		<h2>Certifications</h2>
+		<ul class="certs">
+			{% for cert in certifications %}
+				<li>
+					<a href="{{ cert.url }}" target="_blank" rel="noopener">{{ cert.name }}</a>
+					<span class="cert-meta">{{ cert.authority }} · {{ cert.date }}</span>
+				</li>
+			{% endfor %}
+		</ul>
+	</section>
+
+	<section>
+		<h2>Education</h2>
+		<p>University of Montana - Geoscience</p>
+	</section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+	document.getElementById("print-btn")?.addEventListener("click", () => window.print());
+</script>
+{% endblock %}
