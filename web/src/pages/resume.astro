@@ -11,6 +11,8 @@ const experience = [
 		bullets: [
 			"Migrated on-premise infrastructure to AWS, expanding the cloud footprint across multiple production environments.",
 			"Provisioned and managed cloud infrastructure as code using Terraform.",
+			"Architected multi-tenant AWS isolation, concentrating governance and compliance controls at the database layer (per-client isolation, with dedicated RDS instances for clients needing stronger controls), layered with ALB-routed compute isolation and VPC-level network isolation escalated per client.",
+			"Provide daily hands-on support for a parallel Azure environment, spanning a shared multi-tenant tenancy and isolated client subscriptions.",
 			"Leading migration of TeamCity CI/CD pipelines to GitHub Actions, modernizing the team's delivery toolchain.",
 			"Managed application release pipelines in Octopus Deploy across multiple deployment targets.",
 			"Deployed Datadog as the team's observability platform and automated its configuration via PowerShell modules.",
@@ -83,7 +85,7 @@ const experience = [
 const skillGroups = [
 	{
 		label: "Cloud & DevOps",
-		items: ["AWS", "Terraform", "GitHub Actions", "Octopus Deploy", "TeamCity", "Datadog", "Elastic Stack"],
+		items: ["AWS", "Azure", "Terraform", "GitHub Actions", "Octopus Deploy", "TeamCity", "Datadog", "Elastic Stack"],
 	},
 	{
 		label: "Infrastructure",
