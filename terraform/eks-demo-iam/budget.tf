@@ -1,7 +1,9 @@
 # Cost-allocation tag activation has up to a 24h propagation delay in Cost
 # Explorer/Budgets before this tag-scoped budget starts catching spend - the
 # account-wide budget in terraform/billing-alert/main.tf is the real backstop
-# during that window and afterward.
+# during that window and afterward. Lives in this persistent stack (not the
+# ephemeral cluster stack) since re-registering the cost allocation tag on
+# every spin-up/teardown cycle would hit that 24h lag every single time.
 resource "aws_ce_cost_allocation_tag" "project" {
   tag_key = "Project"
   status  = "Active"

@@ -53,12 +53,12 @@ resource "aws_eks_node_group" "this" {
 # aws-auth ConfigMap edit step.
 resource "aws_eks_access_entry" "lifecycle_role" {
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = aws_iam_role.eks_demo_lifecycle.arn
+  principal_arn = data.aws_iam_role.eks_demo_lifecycle.arn
 }
 
 resource "aws_eks_access_policy_association" "lifecycle_role_admin" {
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = aws_iam_role.eks_demo_lifecycle.arn
+  principal_arn = data.aws_iam_role.eks_demo_lifecycle.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {

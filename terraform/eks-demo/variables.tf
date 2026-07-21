@@ -10,12 +10,6 @@ variable "domain_name" {
   default     = "mattwindham.dev"
 }
 
-variable "github_repo" {
-  description = "GitHub repo allowed to assume the eks-demo lifecycle role, as owner/name"
-  type        = string
-  default     = "fattswindstorm/mattwindham.dev"
-}
-
 variable "cluster_name" {
   description = "EKS cluster name"
   type        = string
@@ -50,9 +44,4 @@ variable "node_max_size" {
   description = "Maximum node count"
   type        = number
   default     = 2
-}
-
-variable "billing_alert_email" {
-  description = "Email address to notify when the eks-demo budget threshold is crossed"
-  type        = string
 }

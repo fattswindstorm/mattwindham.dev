@@ -11,9 +11,3 @@ data "terraform_remote_state" "site" {
     region = "us-east-1"
   }
 }
-
-# Reuses the account's single GitHub Actions OIDC provider (created once in
-# terraform/github-oidc/main.tf) rather than creating a second one.
-data "aws_iam_openid_connect_provider" "github_actions" {
-  url = "https://token.actions.githubusercontent.com"
-}
