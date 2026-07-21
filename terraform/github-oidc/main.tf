@@ -450,7 +450,10 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:UntagResource",
       "ecr:ListTagsForResource",
     ]
-    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo"]
+    resources = [
+      "arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo",
+      "arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-django",
+    ]
   }
 
   statement {
@@ -474,7 +477,45 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:BatchGetImage",
       "ecr:GetDownloadUrlForLayer",
     ]
-    resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo"]
+    resources = [
+      "arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-demo",
+      "arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/resume-site-django",
+    ]
+  }
+
+  statement {
+    sid    = "EcsDjangoDeploy"
+    effect = "Allow"
+    actions = [
+      "ecs:DescribeTaskDefinition",
+      "ecs:RegisterTaskDefinition",
+    ]
+    # RegisterTaskDefinition doesn't support resource-level scoping (same
+    # acceptance already made elsewhere in this policy for other
+    # create-family actions without ARN scoping support).
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "EcsDjangoServiceUpdate"
+    effect = "Allow"
+    actions = [
+      "ecs:UpdateService",
+      "ecs:DescribeServices",
+    ]
+    resources = [
+      "arn:aws:ecs:us-east-1:${data.aws_caller_identity.current.account_id}:service/site-django/site-django",
+    ]
+  }
+
+  statement {
+    sid     = "EcsDjangoPassRole"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task-execution",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task",
+    ]
   }
 
   statement {
