@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load allauth socialaccount %}
+{% block title %}Create an Account - Matthew Windham{% endblock %}
+
+{% block content %}
+<main class="wrap auth-main">
+	<h1 class="page-h1">Create an Account</h1>
+
+	<form method="post" action="{% url 'account_signup' %}" class="auth-form">
+		{% csrf_token %}
+		{{ form.non_field_errors }}
+		{{ form.as_p }}
+		{% if redirect_field_value %}
+			<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+		{% endif %}
+		<button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+	</form>
+
+	{% get_providers as socialaccount_providers %}
+	{% if socialaccount_providers %}
+		<div class="auth-divider"><span>or</span></div>
+		{% for provider in socialaccount_providers %}
+			{% provider_login_url provider process="login" as google_url %}
+			<a href="{{ google_url }}" class="btn btn-ghost auth-social">Continue with {{ provider.name }}</a>
+		{% endfor %}
+	{% endif %}
+
+	<p class="auth-switch">Already have an account? <a href="{% url 'account_login' %}">Sign in</a></p>
+</main>
+{% endblock %}

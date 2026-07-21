@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Projects — Matthew Windham{% endblock %}
+{% block description %}Current projects and learning roadmap for Matthew Windham — Azure, Kubernetes, and the path to senior-level DevOps.{% endblock %}
+
+{% block content %}
+<main class="wrap">
+	<h1 class="projects-h1">Projects &amp; Goals</h1>
+
+	<section>
+		<h2>Projects</h2>
+		<ul class="project-list">
+			{% for p in projects %}
+				<li class="project-card">
+					<div class="project-head">
+						<strong class="project-name">{{ p.name }}</strong>
+						<div class="project-links">
+							{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">Site</a>{% endif %}
+							<a href="{{ p.repo }}" target="_blank" rel="noopener">GitHub</a>
+						</div>
+					</div>
+					<p class="project-desc">{{ p.description }}</p>
+					<ul class="pills">
+						{% for s in p.stack %}<li>{{ s }}</li>{% endfor %}
+					</ul>
+				</li>
+			{% endfor %}
+		</ul>
+	</section>
+
+	<section>
+		<h2>Certification Path</h2>
+		<p class="section-intro">
+			The goal is Senior DevOps Engineer. Two gaps stand out in the Sr. JD at Ren: Kubernetes
+			depth (cluster design, GitOps, pod security) and Azure alongside AWS. The plan attacks
+			both — AZ-900 gets Azure fundamentals fast, then studying CKA on AKS covers Kubernetes
+			hands-on and Azure hands-on in one track.
+		</p>
+		<ol class="cert-path">
+			{% for cert in cert_path %}
+				<li class="cert-item cert-{{ cert.status }}">
+					<div class="cert-marker" aria-hidden="true">{{ cert.marker }}</div>
+					<div class="cert-content">
+						<div class="cert-head">
+							<strong>{{ cert.name }}</strong>
+							{% if cert.date %}
+								<span class="cert-date">{{ cert.date }}</span>
+							{% elif cert.status == "next" %}
+								<span class="cert-badge badge-next">Up next</span>
+							{% elif cert.status == "target" %}
+								<span class="cert-badge badge-target">Target</span>
+							{% endif %}
+						</div>
+						<p class="cert-note">{{ cert.note }}</p>
+					</div>
+				</li>
+			{% endfor %}
+		</ol>
+	</section>
+
+	<section>
+		<h2>Skills I'm Building</h2>
+		<ul class="building-list">
+			{% for item in building_toward %}
+				<li>
+					<span class="skill-name">{{ item.label }}</span>
+					<span class="skill-note">{{ item.note }}</span>
+				</li>
+			{% endfor %}
+		</ul>
+	</section>
+</main>
+{% endblock %}
