@@ -418,9 +418,156 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     # Secrets Manager appends a random 6-char suffix to the ARN at creation
     # time, so the exact ARN can't be known ahead of apply - name-prefix
     # wildcard is the standard way to scope this.
-    resources = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:resume-site/github-dispatch-token-*"]
+    resources = [
+      "arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:resume-site/github-dispatch-token-*",
+      "arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:site-django/*",
+    ]
+  }
+}
+
+# Attached as managed policies (not inline) - the inline policy above
+# already sits near the per-role 10,240-byte combined inline-policy cap
+# alone, so any further inline addition to this role would exceed the
+# aggregate (not just the 7,635-byte single-policy portion actually used).
+# Managed policies don't share that combined cap. Split into two purely
+# because a single managed policy is capped at 6,144 bytes and the
+# combined new statements exceed that - no semantic grouping intended.
+data "aws_iam_policy_document" "github_actions_permissions_2" {
+  statement {
+    sid    = "SiteDjangoNetworkManagement"
+    effect = "Allow"
+    actions = [
+      # EC2 create-family actions don't support resource-level ARN scoping
+      # for creation - same acceptance already made for CloudFrontManagement
+      # and terraform/eks-demo-iam's NetworkManagement statement.
+      "ec2:CreateVpc",
+      "ec2:DeleteVpc",
+      "ec2:DescribeVpcs",
+      "ec2:ModifyVpcAttribute",
+      "ec2:CreateSubnet",
+      "ec2:DeleteSubnet",
+      "ec2:DescribeSubnets",
+      "ec2:CreateInternetGateway",
+      "ec2:DeleteInternetGateway",
+      "ec2:AttachInternetGateway",
+      "ec2:DetachInternetGateway",
+      "ec2:DescribeInternetGateways",
+      "ec2:CreateRouteTable",
+      "ec2:DeleteRouteTable",
+      "ec2:CreateRoute",
+      "ec2:DeleteRoute",
+      "ec2:AssociateRouteTable",
+      "ec2:DisassociateRouteTable",
+      "ec2:DescribeRouteTables",
+      "ec2:CreateSecurityGroup",
+      "ec2:DeleteSecurityGroup",
+      "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:AuthorizeSecurityGroupEgress",
+      "ec2:RevokeSecurityGroupIngress",
+      "ec2:RevokeSecurityGroupEgress",
+      "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSecurityGroupRules",
+      "ec2:CreateTags",
+      "ec2:DeleteTags",
+      "ec2:DescribeTags",
+      "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeAccountAttributes",
+      "ec2:DescribeNetworkInterfaces",
+    ]
+    resources = ["*"]
   }
 
+  statement {
+    sid    = "SiteDjangoRdsManagement"
+    effect = "Allow"
+    actions = [
+      "rds:CreateDBInstance",
+      "rds:DeleteDBInstance",
+      "rds:DescribeDBInstances",
+      "rds:ModifyDBInstance",
+      "rds:AddTagsToResource",
+      "rds:RemoveTagsFromResource",
+      "rds:ListTagsForResource",
+      "rds:CreateDBSubnetGroup",
+      "rds:DeleteDBSubnetGroup",
+      "rds:DescribeDBSubnetGroups",
+      "rds:ModifyDBSubnetGroup",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "SiteDjangoAlbManagement"
+    effect = "Allow"
+    actions = [
+      "elasticloadbalancing:CreateLoadBalancer",
+      "elasticloadbalancing:DeleteLoadBalancer",
+      "elasticloadbalancing:DescribeLoadBalancers",
+      "elasticloadbalancing:DescribeLoadBalancerAttributes",
+      "elasticloadbalancing:ModifyLoadBalancerAttributes",
+      "elasticloadbalancing:CreateTargetGroup",
+      "elasticloadbalancing:DeleteTargetGroup",
+      "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeTargetGroupAttributes",
+      "elasticloadbalancing:ModifyTargetGroupAttributes",
+      "elasticloadbalancing:ModifyTargetGroup",
+      "elasticloadbalancing:CreateListener",
+      "elasticloadbalancing:DeleteListener",
+      "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:ModifyListener",
+      "elasticloadbalancing:DescribeSSLPolicies",
+      "elasticloadbalancing:AddTags",
+      "elasticloadbalancing:RemoveTags",
+      "elasticloadbalancing:DescribeTags",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "SiteDjangoEcsManagement"
+    effect = "Allow"
+    actions = [
+      "ecs:CreateCluster",
+      "ecs:DeleteCluster",
+      "ecs:DescribeClusters",
+      "ecs:CreateService",
+      "ecs:DeleteService",
+      "ecs:UpdateService",
+      "ecs:DescribeServices",
+      "ecs:TagResource",
+      "ecs:UntagResource",
+      "ecs:ListTagsForResource",
+      "ecs:DeregisterTaskDefinition",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "IAMRoleManagementForSiteDjangoEcsTasks"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:PassRole",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task-execution",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task",
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "github_actions_permissions_3" {
   statement {
     sid    = "EcrRepositoryCreate"
     effect = "Allow"
@@ -497,28 +644,6 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
-    sid    = "EcsDjangoServiceUpdate"
-    effect = "Allow"
-    actions = [
-      "ecs:UpdateService",
-      "ecs:DescribeServices",
-    ]
-    resources = [
-      "arn:aws:ecs:us-east-1:${data.aws_caller_identity.current.account_id}:service/site-django/site-django",
-    ]
-  }
-
-  statement {
-    sid     = "EcsDjangoPassRole"
-    effect  = "Allow"
-    actions = ["iam:PassRole"]
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task-execution",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/site-django-task",
-    ]
-  }
-
-  statement {
     sid    = "ApiGatewayManagement"
     effect = "Allow"
     actions = [
@@ -572,4 +697,24 @@ resource "aws_iam_role_policy" "github_actions_permissions" {
   name   = "resume-site-terraform-site"
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions_permissions.json
+}
+
+resource "aws_iam_policy" "github_actions_permissions_2" {
+  name   = "resume-site-terraform-site-2"
+  policy = data.aws_iam_policy_document.github_actions_permissions_2.json
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_permissions_2" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.github_actions_permissions_2.arn
+}
+
+resource "aws_iam_policy" "github_actions_permissions_3" {
+  name   = "resume-site-terraform-site-3"
+  policy = data.aws_iam_policy_document.github_actions_permissions_3.json
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_permissions_3" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.github_actions_permissions_3.arn
 }
