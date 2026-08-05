@@ -21,11 +21,23 @@ data "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 # ---------------------------------------------------------------
-# Dedicated GitHub Actions OIDC role, scoped to just the two eks-demo
-# lifecycle workflows via the job_workflow_ref claim - deliberately
-# separate from the shared "github-actions-resume-site" role (see
-# terraform/github-oidc/main.tf) so a compromise of the regular deploy
-# pipeline can never reach EKS/EC2/IAM-CreateRole/AutoScaling permissions.
+# Dedicated GitHub Actions OIDC role - deliberately separate from the
+# shared "github-actions-resume-site" role (see terraform/github-oidc/
+# main.tf) so a compromise of the regular deploy pipeline can never reach
+# EKS/EC2/IAM-CreateRole/AutoScaling permissions.
+#
+# Originally scoped via the job_workflow_ref claim to just the two
+# eks-demo lifecycle workflows, but that claim is only documented for jobs
+# that call a *reusable* workflow - these are standalone workflow_dispatch/
+# schedule-triggered workflows, so the claim never matched and every
+# scheduled teardown failed at AssumeRoleWithWebIdentity from day one
+# (never actually caught by anything, since the failure state itself
+# couldn't write to DynamoDB without... assuming this same role). Switched
+# to the sub claim, the same repo:ref pattern already proven to work for
+# github-actions-resume-site - scoped to this repo's main branch rather
+# than to the specific workflow files, which is an acceptable tradeoff
+# since every workflow that can run on main already has equivalent trust
+# via that other role anyway.
 # ---------------------------------------------------------------
 
 data "aws_iam_policy_document" "eks_demo_trust" {
@@ -46,10 +58,9 @@ data "aws_iam_policy_document" "eks_demo_trust" {
 
     condition {
       test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:job_workflow_ref"
+      variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "${var.github_repo}/.github/workflows/spin-up-eks-demo.yml@refs/heads/main",
-        "${var.github_repo}/.github/workflows/teardown-eks-demo.yml@refs/heads/main",
+        "repo:${var.github_repo}:ref:refs/heads/main",
       ]
     }
   }
