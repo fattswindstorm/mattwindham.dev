@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Settings - Matthew Windham{% endblock %}
+
+{% block content %}
+<main class="wrap auth-main">
+	<h1 class="page-h1">Settings</h1>
+
+	<form method="post" class="auth-form">
+		{% csrf_token %}
+		<p>
+			<label>
+				<input type="checkbox" name="email_notifications" {% if user.email_notifications %}checked{% endif %} />
+				Email me when there's a reply to one of my opportunities
+			</label>
+		</p>
+		<button type="submit" class="btn btn-primary auth-submit">Save</button>
+	</form>
+
+	<div class="danger-zone">
+		<h2 class="page-h2">Delete account</h2>
+		<p class="auth-note">
+			This permanently deletes your account and every opportunity/message thread
+			you've submitted. There's no undo.
+		</p>
+		<form method="post" onsubmit="return confirm('Delete your account? This cannot be undone.');">
+			{% csrf_token %}
+			<button type="submit" name="delete_account" value="1" class="btn btn-ghost auth-submit danger-btn">
+				Delete my account
+			</button>
+		</form>
+	</div>
+</main>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ thread.job_title }} at {{ thread.company }} - Matthew Windham{% endblock %}
+
+{% block content %}
+<main class="wrap portal-main">
+	<h1 class="page-h1">{{ thread.job_title }} at {{ thread.company }}</h1>
+
+	<dl class="thread-facts">
+		<dt>From</dt><dd>{{ thread.name }} &lt;{{ thread.email }}&gt;</dd>
+		<dt>Type</dt><dd>{{ thread.get_employment_type_display }}</dd>
+		<dt>Compensation</dt><dd>{{ thread.get_compensation_range_display }}{% if thread.low_comp %} <span class="thread-tag">low comp</span>{% endif %}</dd>
+		{% if thread.contract_length %}<dt>Contract length</dt><dd>{{ thread.contract_length }}</dd>{% endif %}
+	</dl>
+
+	<section class="thread-body">
+		<h2 class="page-h2">Description</h2>
+		<p>{{ thread.job_description|linebreaks }}</p>
+		{% if thread.notes %}
+			<h2 class="page-h2">Notes</h2>
+			<p>{{ thread.notes|linebreaks }}</p>
+		{% endif %}
+	</section>
+
+	<section class="thread-messages">
+		<h2 class="page-h2">Messages</h2>
+		{% for message in thread_messages %}
+			<div class="message-bubble message-bubble--{{ message.sender_role }}">
+				<p class="message-meta">{{ message.sender_role|title }} · {{ message.created_at|date:"M j, Y g:i A" }}</p>
+				<p>{{ message.body|linebreaks }}</p>
+			</div>
+		{% empty %}
+			<p class="auth-note">No replies yet.</p>
+		{% endfor %}
+	</section>
+
+	<form method="post" class="auth-form">
+		{% csrf_token %}
+		{{ form.non_field_errors }}
+		{{ form.as_p }}
+		<button type="submit" class="btn btn-primary auth-submit">Reply</button>
+	</form>
+</main>
+{% endblock %}

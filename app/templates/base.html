@@ -70,6 +70,14 @@
 		</div>
 	</nav>
 
+	{% if messages %}
+		<div class="wrap site-messages">
+			{% for message in messages %}
+				<p class="site-message site-message--{{ message.tags }}">{{ message }}</p>
+			{% endfor %}
+		</div>
+	{% endif %}
+
 	{% block content %}{% endblock %}
 
 	<footer class="wrap">

@@ -768,3 +768,76 @@ footer {
 .auth-social { width: 100%; justify-content: center; margin-bottom: 0.75rem; }
 
 .auth-switch { color: var(--text-dim); font-size: 0.9rem; }
+
+.auth-form textarea,
+.auth-form select {
+	background: var(--bg-raised);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.6rem 0.8rem;
+	color: var(--text);
+	font-size: 0.95rem;
+	font-family: var(--sans);
+	resize: vertical;
+}
+
+.auth-form textarea:focus,
+.auth-form select:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+/* ── Site-wide messages (django.contrib.messages) ── */
+.site-messages { padding-top: 1.5rem; }
+.site-message {
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.7rem 1rem;
+	font-size: 0.9rem;
+	margin-bottom: 0.75rem;
+}
+.site-message--success { border-color: var(--accent); color: var(--accent); }
+.site-message--error { border-color: #ff6b6b; color: #ff6b6b; }
+
+/* ── Portal (opportunity intake/dashboard/threads/settings) ── */
+.portal-main { max-width: 640px; padding-top: 3rem; }
+
+.page-h2 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+
+.thread-list { list-style: none; margin: 0; padding: 0; }
+.thread-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 1rem;
+	padding: 0.9rem 0;
+	border-bottom: 1px solid var(--border);
+}
+.thread-meta { color: var(--text-dim); font-size: 0.85rem; white-space: nowrap; }
+.thread-tag {
+	font-family: var(--mono);
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--accent);
+	border: 1px solid var(--accent);
+	border-radius: 4px;
+	padding: 0.1rem 0.4rem;
+	margin-left: 0.5rem;
+}
+
+.thread-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 1rem 0; }
+.thread-facts dt { color: var(--text-dim); font-size: 0.85rem; }
+.thread-facts dd { margin: 0; }
+
+.message-bubble {
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 0.8rem 1rem;
+	margin-bottom: 0.75rem;
+}
+.message-bubble--owner { border-color: var(--accent); }
+.message-meta { color: var(--text-dim); font-size: 0.8rem; margin: 0 0 0.4rem; }
+
+.danger-zone { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.danger-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
