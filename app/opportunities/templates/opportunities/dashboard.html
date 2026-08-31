@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Matthew Windham{% endblock %}
+
+{% block content %}
+<main class="wrap portal-main">
+	<h1 class="page-h1">Your opportunities</h1>
+
+	{% if threads %}
+		<ul class="thread-list">
+			{% for thread in threads %}
+				<li class="thread-row">
+					<a href="{% url 'opportunities:thread_detail' thread.pk %}">
+						<strong>{{ thread.job_title }}</strong> at {{ thread.company }}
+						{% if thread.low_comp %}<span class="thread-tag">low comp</span>{% endif %}
+					</a>
+					<span class="thread-meta">{{ thread.submitted_at|date:"M j, Y" }}</span>
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<p class="auth-note">
+			You haven't submitted an opportunity yet.
+			<a href="{% url 'opportunities:intake' %}">Tell me about one</a>.
+		</p>
+	{% endif %}
+</main>
+{% endblock %}

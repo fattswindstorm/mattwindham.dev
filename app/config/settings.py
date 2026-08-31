@@ -166,6 +166,7 @@ else:
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mattwindham.dev")
 NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "")
+SITE_URL = os.environ.get("SITE_URL", "https://mattwindham.dev")
 
 
 # Production hardening - applied whenever DEBUG is off, since CloudFront

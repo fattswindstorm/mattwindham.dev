@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Admin inbox - Matthew Windham{% endblock %}
+
+{% block content %}
+<main class="wrap portal-main">
+	<h1 class="page-h1">Admin inbox</h1>
+
+	{% if threads %}
+		<ul class="thread-list">
+			{% for thread in threads %}
+				<li class="thread-row">
+					<a href="{% url 'opportunities:thread_detail' thread.pk %}">
+						<strong>{{ thread.job_title }}</strong> at {{ thread.company }} — {{ thread.name }}
+						{% if thread.low_comp %}<span class="thread-tag">low comp</span>{% endif %}
+					</a>
+					<span class="thread-meta">{{ thread.submitted_at|date:"M j, Y" }}</span>
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<p class="auth-note">No opportunities submitted yet.</p>
+	{% endif %}
+</main>
+{% endblock %}
